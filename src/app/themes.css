@@ -1,0 +1,82 @@
+/*
+ * Paletas de cor. Cada paleta sobrescreve apenas as variáveis de destaque;
+ * o restante vem de :root / .dark em globals.css.
+ * O atributo data-palette fica no <html> (ver src/lib/themes.ts).
+ */
+
+[data-palette="blue"] {
+  --primary: oklch(0.546 0.245 262.881);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.623 0.214 259.815);
+  --sidebar-primary: oklch(0.546 0.245 262.881);
+  --chart-1: oklch(0.546 0.245 262.881);
+}
+.dark[data-palette="blue"] {
+  --primary: oklch(0.623 0.214 259.815);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.488 0.243 264.376);
+  --sidebar-primary: oklch(0.623 0.214 259.815);
+  --chart-1: oklch(0.623 0.214 259.815);
+}
+
+[data-palette="green"] {
+  --primary: oklch(0.596 0.145 163.225);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.696 0.17 162.48);
+  --sidebar-primary: oklch(0.596 0.145 163.225);
+  --chart-1: oklch(0.596 0.145 163.225);
+}
+.dark[data-palette="green"] {
+  --primary: oklch(0.696 0.17 162.48);
+  --primary-foreground: oklch(0.205 0 0);
+  --ring: oklch(0.508 0.118 165.612);
+  --sidebar-primary: oklch(0.696 0.17 162.48);
+  --chart-1: oklch(0.696 0.17 162.48);
+}
+
+[data-palette="violet"] {
+  --primary: oklch(0.541 0.281 293.009);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.606 0.25 292.717);
+  --sidebar-primary: oklch(0.541 0.281 293.009);
+  --chart-1: oklch(0.541 0.281 293.009);
+}
+.dark[data-palette="violet"] {
+  --primary: oklch(0.606 0.25 292.717);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.491 0.27 292.581);
+  --sidebar-primary: oklch(0.606 0.25 292.717);
+  --chart-1: oklch(0.606 0.25 292.717);
+}
+
+[data-palette="orange"] {
+  --primary: oklch(0.646 0.222 41.116);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.705 0.213 47.604);
+  --sidebar-primary: oklch(0.646 0.222 41.116);
+  --chart-1: oklch(0.646 0.222 41.116);
+}
+.dark[data-palette="orange"] {
+  --primary: oklch(0.705 0.213 47.604);
+  --primary-foreground: oklch(0.205 0 0);
+  --ring: oklch(0.553 0.195 38.402);
+  --sidebar-primary: oklch(0.705 0.213 47.604);
+  --chart-1: oklch(0.705 0.213 47.604);
+}
+
+[data-palette="rose"] {
+  --primary: oklch(0.586 0.253 17.585);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.645 0.246 16.439);
+  --sidebar-primary: oklch(0.586 0.253 17.585);
+  --chart-1: oklch(0.586 0.253 17.585);
+}
+.dark[data-palette="rose"] {
+  --primary: oklch(0.645 0.246 16.439);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.514 0.222 16.935);
+  --sidebar-primary: oklch(0.645 0.246 16.439);
+  --chart-1: oklch(0.645 0.246 16.439);
+}
+
+/* "neutral" usa os valores padrão de globals.css. */
