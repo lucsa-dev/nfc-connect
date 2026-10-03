@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import type { ActionState } from "@/lib/action-state";
-import type { Link } from "@/lib/database.types";
+import type { Link } from "@/lib/models";
 import { LINK_TYPE_INFO, LINK_TYPES, type LinkType } from "@/lib/link-types";
 import { slugify } from "@/lib/slug";
 

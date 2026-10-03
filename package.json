@@ -11,7 +11,7 @@
     "test:watch": "vitest",
     "typecheck": "next typegen && tsc --noEmit",
     "db:push": "supabase db push",
-    "db:types": "supabase gen types typescript --linked --schema public > src/lib/database.types.ts"
+    "db:types": "(echo \"// Gerado por: npm run db:types (não edite à mão; atalhos em src/lib/models.ts)\" && supabase gen types typescript --linked --schema public) > src/lib/database.types.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

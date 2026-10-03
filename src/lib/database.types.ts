@@ -1,169 +1,336 @@
-// Tipos do banco no formato gerado por `supabase gen types typescript`.
-// Para regenerar: npm run db:types (requer Supabase CLI e projeto vinculado).
-
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
-
-export type LinkTypeEnum = "review" | "pix" | "business_card" | "other";
+// Gerado por: npm run db:types (não edite à mão; atalhos em src/lib/models.ts)
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
-  __InternalSupabase: { PostgrestVersion: "12" };
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.18"
+  }
   public: {
     Tables: {
       businesses: {
         Row: {
-          id: string;
-          owner_id: string;
-          name: string;
-          slug: string;
-          description: string | null;
-          created_at: string;
-          updated_at: string;
-        };
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          owner_id: string
+          slug: string
+          updated_at: string
+        }
         Insert: {
-          id?: string;
-          owner_id?: string;
-          name: string;
-          slug: string;
-          description?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          owner_id?: string
+          slug: string
+          updated_at?: string
+        }
         Update: {
-          name?: string;
-          slug?: string;
-          description?: string | null;
-        };
-        Relationships: [];
-      };
-      links: {
-        Row: {
-          id: string;
-          business_id: string;
-          name: string;
-          slug: string;
-          type: LinkTypeEnum;
-          url: string | null;
-          is_active: boolean;
-          click_count: number;
-          pix_key: string | null;
-          pix_name: string | null;
-          pix_city: string | null;
-          pix_amount: number | null;
-          pix_description: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          business_id: string;
-          name: string;
-          slug: string;
-          type?: LinkTypeEnum;
-          url?: string | null;
-          is_active?: boolean;
-          pix_key?: string | null;
-          pix_name?: string | null;
-          pix_city?: string | null;
-          pix_amount?: number | null;
-          pix_description?: string | null;
-        };
-        Update: {
-          name?: string;
-          slug?: string;
-          type?: LinkTypeEnum;
-          url?: string | null;
-          is_active?: boolean;
-          pix_key?: string | null;
-          pix_name?: string | null;
-          pix_city?: string | null;
-          pix_amount?: number | null;
-          pix_description?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "links_business_id_fkey";
-            columns: ["business_id"];
-            isOneToOne: false;
-            referencedRelation: "businesses";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       link_visits: {
         Row: {
-          id: number;
-          link_id: string;
-          business_id: string;
-          created_at: string;
-          source: "nfc" | "qr";
-          ip_hash: string | null;
-          user_agent: string | null;
-          browser: string | null;
-          browser_version: string | null;
-          os: string | null;
-          os_version: string | null;
-          device_type: string | null;
-          device_vendor: string | null;
-          is_bot: boolean;
-          language: string | null;
-          referer: string | null;
-          country: string | null;
-          region: string | null;
-          city: string | null;
-          latitude: number | null;
-          longitude: number | null;
-        };
+          browser: string | null
+          browser_version: string | null
+          business_id: string
+          city: string | null
+          country: string | null
+          created_at: string
+          device_type: string | null
+          device_vendor: string | null
+          id: number
+          ip_hash: string | null
+          is_bot: boolean
+          language: string | null
+          latitude: number | null
+          link_id: string
+          longitude: number | null
+          os: string | null
+          os_version: string | null
+          referer: string | null
+          region: string | null
+          source: string
+          user_agent: string | null
+        }
         Insert: {
-          link_id: string;
-          business_id: string;
-          created_at?: string;
-          source?: "nfc" | "qr";
-          ip_hash?: string | null;
-          user_agent?: string | null;
-          browser?: string | null;
-          browser_version?: string | null;
-          os?: string | null;
-          os_version?: string | null;
-          device_type?: string | null;
-          device_vendor?: string | null;
-          is_bot?: boolean;
-          language?: string | null;
-          referer?: string | null;
-          country?: string | null;
-          region?: string | null;
-          city?: string | null;
-          latitude?: number | null;
-          longitude?: number | null;
-        };
-        Update: never;
+          browser?: string | null
+          browser_version?: string | null
+          business_id: string
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          device_type?: string | null
+          device_vendor?: string | null
+          id?: never
+          ip_hash?: string | null
+          is_bot?: boolean
+          language?: string | null
+          latitude?: number | null
+          link_id: string
+          longitude?: number | null
+          os?: string | null
+          os_version?: string | null
+          referer?: string | null
+          region?: string | null
+          source?: string
+          user_agent?: string | null
+        }
+        Update: {
+          browser?: string | null
+          browser_version?: string | null
+          business_id?: string
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          device_type?: string | null
+          device_vendor?: string | null
+          id?: never
+          ip_hash?: string | null
+          is_bot?: boolean
+          language?: string | null
+          latitude?: number | null
+          link_id?: string
+          longitude?: number | null
+          os?: string | null
+          os_version?: string | null
+          referer?: string | null
+          region?: string | null
+          source?: string
+          user_agent?: string | null
+        }
         Relationships: [
           {
-            foreignKeyName: "link_visits_link_id_fkey";
-            columns: ["link_id"];
-            isOneToOne: false;
-            referencedRelation: "links";
-            referencedColumns: ["id"];
+            foreignKeyName: "link_visits_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "link_visits_business_id_fkey";
-            columns: ["business_id"];
-            isOneToOne: false;
-            referencedRelation: "businesses";
-            referencedColumns: ["id"];
+            foreignKeyName: "link_visits_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "links"
+            referencedColumns: ["id"]
           },
-        ];
-      };
-    };
-    Views: { [_ in never]: never };
-    Functions: { [_ in never]: never };
-    Enums: { link_type: LinkTypeEnum };
-    CompositeTypes: { [_ in never]: never };
-  };
-};
+        ]
+      }
+      links: {
+        Row: {
+          business_id: string
+          click_count: number
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          pix_amount: number | null
+          pix_city: string | null
+          pix_description: string | null
+          pix_key: string | null
+          pix_name: string | null
+          slug: string
+          type: Database["public"]["Enums"]["link_type"]
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          business_id: string
+          click_count?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          pix_amount?: number | null
+          pix_city?: string | null
+          pix_description?: string | null
+          pix_key?: string | null
+          pix_name?: string | null
+          slug: string
+          type?: Database["public"]["Enums"]["link_type"]
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          business_id?: string
+          click_count?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          pix_amount?: number | null
+          pix_city?: string | null
+          pix_description?: string | null
+          pix_key?: string | null
+          pix_name?: string | null
+          slug?: string
+          type?: Database["public"]["Enums"]["link_type"]
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "links_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      link_type: "review" | "pix" | "business_card" | "other"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
 
-export type Tables<T extends keyof Database["public"]["Tables"]> =
-  Database["public"]["Tables"][T]["Row"];
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-export type Business = Tables<"businesses">;
-export type Link = Tables<"links">;
-export type LinkVisit = Tables<"link_visits">;
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never) = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never) = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      link_type: ["review", "pix", "business_card", "other"],
+    },
+  },
+} as const

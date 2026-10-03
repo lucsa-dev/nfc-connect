@@ -47,7 +47,7 @@ function UrlRow({ label, url, hint }: { label: string; url: string; hint: string
   );
 }
 
-const SOURCE = { nfc: "NFC", qr: "QR Code" } as const;
+const SOURCE: Record<string, string> = { nfc: "NFC", qr: "QR Code" };
 const DEVICE: Record<string, string> = { mobile: "Celular", tablet: "Tablet", desktop: "Computador", bot: "Robô" };
 
 export default async function LinkPage({ params, searchParams }: Props) {
