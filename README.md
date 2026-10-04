@@ -27,7 +27,8 @@ Cada link ganha um endereço público `https://seu-dominio.com.br/{negocio}/{lin
 - Contador por link e registro de cada acesso: data, origem (NFC/QR), dispositivo, fabricante, sistema, navegador, idioma, referer, país/estado/cidade/coordenadas (geolocalização da Vercel) e o hash do IP.
 - Painel de acessos (7, 30 ou 90 dias): total, visitantes únicos, acessos por dia, quebras por origem, dispositivo, sistema, navegador e cidade, e os últimos acessos. Exportação em CSV.
 - Robôs de pré-visualização (WhatsApp, Instagram, Google...) ficam registrados mas não entram no contador.
-- Tema claro/escuro/sistema e 6 paletas de cor, trocadas pelo botão de paleta no topo.
+- Landing page de vendas na home e modelos de cartão prontos para impressão (gráfica ou folha A4).
+- Tema claro (padrão) e escuro.
 
 ## Rodando localmente
 
@@ -78,17 +79,11 @@ QR Code  →  /padaria/avaliacao?s=qr   ─┤→ busca link ativo → 302 para 
 - O IP nunca é salvo em claro, apenas `SHA-256(salt + IP)`, o que basta para contar visitantes únicos (LGPD).
 - Links Pix sem URL de destino vão para `/{negocio}/{link}/pix`, que gera o BR Code conforme o manual do Banco Central.
 
-## Temas
+## Tema e identidade visual
 
-- **Claro/escuro/sistema**: `next-themes` (classe `.dark` no `<html>`).
-- **Paletas de cor**: atributo `data-palette` no `<html>`, salvo no navegador.
-
-Para criar uma paleta nova:
-
-1. adicione os blocos `[data-palette="minha-cor"]` e `.dark[data-palette="minha-cor"]` em [`src/app/themes.css`](src/app/themes.css);
-2. registre a paleta em [`src/lib/themes.ts`](src/lib/themes.ts).
-
-Para mudar a paleta padrão, altere `DEFAULT_PALETTE` em `src/lib/themes.ts`. As cores-base (fundo, bordas, raio) ficam em `src/app/globals.css` e seguem o padrão do shadcn/ui, então temas gerados em [ui.shadcn.com/themes](https://ui.shadcn.com/themes) podem ser colados direto ali.
+- Cores da marca TopTap em [`src/app/globals.css`](src/app/globals.css), nos blocos `:root` (claro) e `.dark` (escuro), no padrão de variáveis do shadcn/ui. Para mudar o visual, troque os valores ali.
+- O tema claro é o padrão. O botão de sol/lua alterna para o escuro (`next-themes`).
+- Logo em [`src/components/brand/logo.tsx`](src/components/brand/logo.tsx) e arquivos originais em `public/brand/`.
 
 ## Testes
 
