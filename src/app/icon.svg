@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <polygon id="s" points="0,-12 2.94,-4.05 11.41,-3.71 4.76,1.55 7.05,9.71 0,5 -7.05,9.71 -4.76,1.55 -11.41,-3.71 -2.94,-4.05" fill="#FBBC05" stroke="#FBBC05" stroke-width="2.5" stroke-linejoin="round"/>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#FFFFFF"/>
+  <g transform="translate(110 -44) scale(1.9)" fill="none" stroke-width="14" stroke-linecap="round">
+    <circle cx="40" cy="140" r="12" fill="#34A853" stroke="none"/>
+    <path d="M61.86 113.96 A34 34 0 0 1 61.86 166.04" stroke="#FBBC05"/>
+    <path d="M76 97.1 A56 56 0 0 1 76 182.9" stroke="#EA4335"/>
+    <path d="M90.15 80.25 A78 78 0 0 1 90.15 199.75" stroke="#4285F4"/>
+  </g>
+  <g transform="translate(136 400) scale(2)">
+    <use href="#s" x="0"/><use href="#s" x="30"/><use href="#s" x="60"/><use href="#s" x="90"/><use href="#s" x="120"/>
+  </g>
+</svg>

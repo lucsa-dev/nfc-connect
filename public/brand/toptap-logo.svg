@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 240" width="660" height="240">
+  <defs>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600&amp;display=swap');
+      .w{font-family:'Poppins','Google Sans','Product Sans',Helvetica,Arial,sans-serif;font-weight:600;font-size:96px;letter-spacing:-2px}</style>
+    <polygon id="s" points="0,-12 2.94,-4.05 11.41,-3.71 4.76,1.55 7.05,9.71 0,5 -7.05,9.71 -4.76,1.55 -11.41,-3.71 -2.94,-4.05" fill="#FBBC05" stroke="#FBBC05" stroke-width="2.5" stroke-linejoin="round"/>
+  </defs>
+  <rect width="660" height="240" fill="#FFFFFF"/>
+  <!-- ícone NFC -->
+  <g fill="none" stroke-width="14" stroke-linecap="round">
+    <circle cx="80" cy="120" r="12" fill="#34A853" stroke="none"/>
+    <path d="M101.86 93.96 A34 34 0 0 1 101.86 146.04" stroke="#FBBC05"/>
+    <path d="M116 77.1 A56 56 0 0 1 116 162.9" stroke="#EA4335"/>
+    <path d="M130.15 60.25 A78 78 0 0 1 130.15 179.75" stroke="#4285F4"/>
+  </g>
+  <!-- nome -->
+  <text x="180" y="138" class="w"><tspan fill="#3C4043">Top</tspan><tspan fill="#4285F4">Tap</tspan></text>
+  <!-- 5 estrelas -->
+  <g transform="translate(231 188) scale(1.9)">
+    <use href="#s" x="0"/><use href="#s" x="34"/><use href="#s" x="68"/><use href="#s" x="102"/><use href="#s" x="136"/>
+  </g>
+</svg>
