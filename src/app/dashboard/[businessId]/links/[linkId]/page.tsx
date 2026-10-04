@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DownloadIcon, ExternalLinkIcon } from "lucide-react";
+import { CreditCardIcon, DownloadIcon, ExternalLinkIcon } from "lucide-react";
 import { ConfirmDelete } from "@/components/dashboard/confirm-delete";
 import { CopyButton } from "@/components/dashboard/copy-button";
 import { LinkFormDialog } from "@/components/dashboard/link-form-dialog";
@@ -81,6 +81,9 @@ export default async function LinkPage({ params, searchParams }: Props) {
         }
         actions={
           <>
+            <Button size="sm" nativeButton={false} render={<Link href={`${basePath}/impressao`} />}>
+              <CreditCardIcon /> Placa e cartão para impressão
+            </Button>
             <LinkFormDialog
               action={updateLink.bind(null, business.id, link.id)}
               urlPrefix={`/${business.slug}/`}
