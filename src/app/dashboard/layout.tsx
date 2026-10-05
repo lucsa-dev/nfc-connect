@@ -18,6 +18,14 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
               Painel
             </span>
           </Link>
+          <nav aria-label="Painel" className="ml-2 flex gap-1 text-sm">
+            <Link href="/dashboard" className="rounded-md px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground">
+              Negócios
+            </Link>
+            <Link href="/dashboard/pedidos" className="rounded-md px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground">
+              Pedidos
+            </Link>
+          </nav>
           <div className="ml-auto flex items-center gap-1">
             {email && <span className="mr-2 hidden text-sm text-muted-foreground sm:inline">{email}</span>}
             <ThemeSwitcher />

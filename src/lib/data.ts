@@ -76,3 +76,41 @@ export async function getLinkVisits(linkId: string, since: Date, limit = 20000) 
   }
   return rows;
 }
+
+// Pedidos (leads do quiz) -------------------------------------------------------
+
+export const LEAD_STATUSES = ["lead", "quiz", "convertido", "descartado"] as const;
+export type LeadStatus = (typeof LEAD_STATUSES)[number];
+
+export async function listLeads(status: LeadStatus | null) {
+  const supabase = await createClient();
+  let query = supabase
+    .from("leads")
+    .select("id, status, step, place_name, place_city, place_state, contact_name, whatsapp, plaques, cards, total_cents, updated_at, created_at")
+    .order("updated_at", { ascending: false })
+    .limit(200);
+  if (status) query = query.eq("status", status);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+}
+
+export async function countLeadsByStatus() {
+  const supabase = await createClient();
+  const counts = Object.fromEntries(LEAD_STATUSES.map((s) => [s, 0])) as Record<LeadStatus, number>;
+  await Promise.all(
+    LEAD_STATUSES.map(async (s) => {
+      const { count } = await supabase.from("leads").select("id", { count: "exact", head: true }).eq("status", s);
+      counts[s] = count ?? 0;
+    }),
+  );
+  return counts;
+}
+
+export async function getLead(leadId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("leads").select("*").eq("id", leadId).maybeSingle();
+  if (error && error.code !== "22P02") throw error;
+  if (!data) notFound();
+  return data;
+}
