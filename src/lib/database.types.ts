@@ -307,6 +307,24 @@ export type Database = {
           },
         ]
       }
+      site_settings: {
+        Row: {
+          id: boolean
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          id?: boolean
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          id?: boolean
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

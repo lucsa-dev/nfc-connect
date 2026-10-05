@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { contactHref } from "@/lib/site-config";
+import { contactHref, whatsappHref } from "@/lib/site-config";
 
 describe("contactHref", () => {
   it("prioriza o WhatsApp com mensagem pronta", () => {
@@ -16,5 +16,11 @@ describe("contactHref", () => {
 
   it("retorna null sem contato configurado", () => {
     expect(contactHref("x", { whatsapp: null, email: null })).toBeNull();
+  });
+});
+
+describe("whatsappHref", () => {
+  it("usa só os dígitos do número e codifica a mensagem", () => {
+    expect(whatsappHref("+5585982078212", "Olá, tudo bem?")).toBe("https://wa.me/5585982078212?text=Ol%C3%A1%2C%20tudo%20bem%3F");
   });
 });

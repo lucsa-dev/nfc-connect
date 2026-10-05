@@ -40,13 +40,15 @@ import {
   whatsappSummary,
   type Tone,
 } from "@/lib/quiz";
-import { contactHref } from "@/lib/site-config";
+import { contactHref, whatsappHref } from "@/lib/site-config";
 
 type Dispatch = React.Dispatch<Parameters<typeof reducer>[1]>;
 interface StepProps {
   state: QuizState;
   dispatch: Dispatch;
   art: ArtData;
+  /** WhatsApp da TopTap (configurado no painel) */
+  whatsapp: string | null;
 }
 
 const businessName = (s: QuizState) => s.business?.name ?? "seu negócio";
@@ -413,11 +415,11 @@ function StepContact({ state, dispatch }: StepProps & { error: string | null }) 
   );
 }
 
-function StepDone({ state, dispatch, art }: StepProps) {
+function StepDone({ state, dispatch, art, whatsapp }: StepProps) {
   const kit = recommendKit(state);
   const style = getStyle(state.style);
   const message = whatsappSummary({ name: state.contact.name, business: state.business, kit, styleLabel: style.label, goal: state.goal });
-  const href = contactHref(message);
+  const href = whatsapp ? whatsappHref(whatsapp, message) : contactHref(message);
   const firstName = state.contact.name.trim().split(/\s+/)[0];
 
   return (
@@ -494,7 +496,7 @@ function canAdvance(key: StepKey, s: QuizState): boolean {
 
 // Quiz -----------------------------------------------------------------------------
 
-export function Quiz({ art }: { art: ArtData }) {
+export function Quiz({ art, whatsapp }: { art: ArtData; whatsapp: string | null }) {
   const [state, dispatch] = useReducer(reducer, undefined, () => loadState(window.location.search));
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -556,7 +558,7 @@ export function Quiz({ art }: { art: ArtData }) {
       </header>
 
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pt-6 pb-32">
-        <Step state={state} dispatch={dispatch} art={art} error={error} />
+        <Step state={state} dispatch={dispatch} art={art} whatsapp={whatsapp} error={error} />
       </main>
 
       {showNav && (

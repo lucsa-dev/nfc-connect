@@ -20,3 +20,8 @@ export function contactHref(
     return `mailto:${config.email}?subject=${encodeURIComponent("Cartão TopTap")}&body=${encodeURIComponent(message)}`;
   return null;
 }
+
+/** Link do WhatsApp para um número em E.164 (+55...) com mensagem pronta. */
+export function whatsappHref(number: string, message = DEFAULT_CONTACT_MESSAGE): string {
+  return `https://wa.me/${number.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
+}

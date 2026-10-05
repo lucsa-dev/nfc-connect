@@ -1,4 +1,4 @@
-import { LogOutIcon } from "lucide-react";
+import { LogOutIcon, SettingsIcon } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { ThemeSwitcher } from "@/components/theme/theme-switcher";
@@ -18,12 +18,20 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
               Painel
             </span>
           </Link>
-          <nav aria-label="Painel" className="ml-2 flex gap-1 text-sm">
+          <nav aria-label="Painel" className="ml-1 flex gap-0.5 text-sm sm:ml-2 sm:gap-1">
             <Link href="/dashboard" className="rounded-md px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground">
               Negócios
             </Link>
             <Link href="/dashboard/pedidos" className="rounded-md px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground">
               Pedidos
+            </Link>
+            <Link
+              href="/dashboard/configuracoes"
+              className="flex items-center gap-1 rounded-md px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label="Configurações"
+            >
+              <SettingsIcon className="size-4 sm:hidden" />
+              <span className="hidden sm:inline">Configurações</span>
             </Link>
           </nav>
           <div className="ml-auto flex items-center gap-1">

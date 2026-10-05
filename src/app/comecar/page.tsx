@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { QuizLoader } from "@/components/quiz/quiz-loader";
 import { CARD_COPY, displayUrl, qrPath } from "@/lib/card";
+import { getSiteSettings } from "@/lib/settings";
 import { getSiteUrl } from "@/lib/urls";
 
 export const metadata: Metadata = {
@@ -10,6 +11,10 @@ export const metadata: Metadata = {
 
 const siteUrl = getSiteUrl();
 
-export default function StartPage() {
-  return <QuizLoader art={{ copy: CARD_COPY.review, qr: qrPath(siteUrl), url: displayUrl(siteUrl) }} />;
+// Estática: regenerada quando as configurações mudam no painel.
+export const revalidate = 3600;
+
+export default async function StartPage() {
+  const { whatsapp } = await getSiteSettings();
+  return <QuizLoader whatsapp={whatsapp} art={{ copy: CARD_COPY.review, qr: qrPath(siteUrl), url: displayUrl(siteUrl) }} />;
 }

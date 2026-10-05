@@ -9,6 +9,6 @@ const Quiz = dynamic(() => import("@/components/quiz/quiz").then((m) => m.Quiz),
   loading: () => <div className="min-h-dvh bg-brand-surface" aria-busy="true" />,
 });
 
-export function QuizLoader({ art }: { art: ArtData }) {
-  return <Quiz art={art} />;
+export function QuizLoader({ art, whatsapp }: { art: ArtData; whatsapp: string | null }) {
+  return <Quiz art={art} whatsapp={whatsapp} />;
 }
