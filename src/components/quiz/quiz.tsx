@@ -20,7 +20,8 @@ import { saveLead, type LeadPayload } from "@/app/comecar/actions";
 import { Logo } from "@/components/brand/logo";
 import { ArtPreview, type ArtData } from "@/components/cards/print-art";
 import { BusinessSearch } from "@/components/quiz/business-search";
-import { loadState, persist, reducer, STEPS, STORAGE_KEY, type QuizState, type StepKey } from "@/components/quiz/state";
+import { StepMenu } from "@/components/quiz/step-menu";
+import { canAdvance, loadState, persist, reducer, STEPS, STORAGE_KEY, type QuizState, type StepKey } from "@/components/quiz/state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +31,7 @@ import {
   describeKit,
   diagnose,
   estimateTimeline,
+  goalLabel,
   goalOptions,
   kitPriceLabel,
   monthlyNewReviews,
@@ -203,7 +205,7 @@ function StepGoal({ state, dispatch }: StepProps) {
       <div className="mt-6 grid gap-3" role="radiogroup">
         {options.map((g) => (
           <Option key={g} selected={state.goal === g} onClick={() => dispatch({ type: "goal", goal: g })}>
-            {g.toLocaleString("pt-BR")} avaliações
+            {goalLabel(g, options)}
           </Option>
         ))}
       </div>
@@ -477,23 +479,6 @@ const NEXT_LABEL: Partial<Record<StepKey, string>> = {
   contato: "Enviar pedido",
 };
 
-function canAdvance(key: StepKey, s: QuizState): boolean {
-  switch (key) {
-    case "negocio":
-      return Boolean(s.business);
-    case "meta":
-      return s.goal !== null;
-    case "onde-paga":
-      return s.spots.length > 0;
-    case "clientes":
-      return s.clients !== null;
-    case "contato":
-      return s.contact.name.trim().length >= 2 && normalizeBrPhone(s.contact.whatsapp) !== null;
-    default:
-      return true;
-  }
-}
-
 // Quiz -----------------------------------------------------------------------------
 
 export function Quiz({ art, whatsapp }: { art: ArtData; whatsapp: string | null }) {
@@ -555,6 +540,7 @@ export function Quiz({ art, whatsapp }: { art: ArtData; whatsapp: string | null 
         >
           <div className="h-full bg-primary transition-[width] duration-300" style={{ width: `${progress}%` }} />
         </div>
+        {showNav && <StepMenu state={state} onSelect={(step) => dispatch({ type: "goTo", step })} />}
       </header>
 
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pt-6 pb-32">

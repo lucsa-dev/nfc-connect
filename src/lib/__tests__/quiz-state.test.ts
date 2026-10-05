@@ -67,3 +67,57 @@ describe("quiz: meta pré-selecionada", () => {
     expect(s.goal).toBe(100); // [50, 100, 250] sem avaliações
   });
 });
+
+import { canAdvance, canJumpTo, type QuizState } from "@/components/quiz/state";
+
+describe("quiz: menu de etapas", () => {
+  const business = {
+    placeId: "x", name: "Padaria", address: null, city: null, state: null, rating: 4.5,
+    reviews: 10, category: null, mapsUrl: null, businessStatus: null, lastReviewAt: null,
+  };
+
+  it("registra a etapa mais distante alcançada", () => {
+    let s: QuizState = { ...initialState(), business };
+    s = reducer(s, { type: "next" });
+    s = reducer(s, { type: "next" });
+    expect(s.maxStep).toBe(2);
+    s = reducer(s, { type: "back" });
+    expect(s.step).toBe(1);
+    expect(s.maxStep).toBe(2);
+  });
+
+  it("volta e avança pelo menu só até onde já chegou", () => {
+    const s = { ...initialState(), business, goal: 100, step: STEPS.indexOf("plano"), maxStep: STEPS.indexOf("plano") };
+    expect(reducer(s, { type: "goTo", step: 0 }).step).toBe(0);
+    const back = { ...s, step: 2 };
+    expect(reducer(back, { type: "goTo", step: STEPS.indexOf("plano") }).step).toBe(STEPS.indexOf("plano"));
+    expect(reducer(back, { type: "goTo", step: STEPS.indexOf("contato") }).step).toBe(2); // ainda não alcançada
+  });
+
+  it("não pula para o cálculo nem para a conclusão", () => {
+    const s = { ...initialState(), business, goal: 100, maxStep: STEPS.length - 1 };
+    expect(canJumpTo(s, STEPS.indexOf("calculando"))).toBe(false);
+    expect(canJumpTo(s, STEPS.indexOf("pronto"))).toBe(false);
+    expect(canJumpTo(s, STEPS.indexOf("contato"))).toBe(true);
+  });
+
+  it("bloqueia avançar se uma resposta anterior ficou inválida", () => {
+    // trocou o negócio: meta zerada e negócio vazio
+    const s = { ...initialState(), business: null, goal: null, step: 0, maxStep: STEPS.indexOf("plano") };
+    expect(canJumpTo(s, STEPS.indexOf("plano"))).toBe(false);
+    expect(canJumpTo({ ...s, business }, STEPS.indexOf("plano"))).toBe(false); // falta a meta
+    expect(canJumpTo({ ...s, business }, STEPS.indexOf("meta"))).toBe(true);
+  });
+
+  it("ao pular para a meta sem resposta, pré-seleciona a opção do meio", () => {
+    const s = { ...initialState(), business, goal: null, step: 0, maxStep: STEPS.indexOf("plano") };
+    const jumped = reducer(s, { type: "goTo", step: STEPS.indexOf("meta") });
+    expect(jumped.goal).not.toBeNull();
+  });
+
+  it("valida o contato", () => {
+    const s = initialState();
+    expect(canAdvance("contato", { ...s, contact: { name: "Ana", whatsapp: "(85) 99999-8888", consent: false } })).toBe(true);
+    expect(canAdvance("contato", { ...s, contact: { name: "A", whatsapp: "(85) 99999-8888", consent: false } })).toBe(false);
+  });
+});

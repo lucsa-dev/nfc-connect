@@ -1,6 +1,6 @@
 import type { StyleId } from "@/lib/card";
 import type { PlaceInfo } from "@/lib/places";
-import { goalOptions, type ClientBandId, type QuizAnswers, type SpotId } from "@/lib/quiz";
+import { goalOptions, normalizeBrPhone, type ClientBandId, type QuizAnswers, type SpotId } from "@/lib/quiz";
 
 export const STEPS = [
   "negocio",
@@ -16,8 +16,22 @@ export const STEPS = [
 ] as const;
 export type StepKey = (typeof STEPS)[number];
 
+/** Etapas mostradas no menu do topo (cálculo e conclusão não entram). */
+export const MENU_STEPS: Array<{ key: StepKey; label: string }> = [
+  { key: "negocio", label: "Negócio" },
+  { key: "como-funciona", label: "Como funciona" },
+  { key: "meta", label: "Meta" },
+  { key: "onde-paga", label: "Atendimento" },
+  { key: "clientes", label: "Clientes" },
+  { key: "pontos", label: "Pontos" },
+  { key: "plano", label: "Plano" },
+  { key: "contato", label: "Contato" },
+];
+
 export interface QuizState extends QuizAnswers {
   step: number;
+  /** Etapa mais distante já alcançada (permite voltar e avançar pelo menu). */
+  maxStep: number;
   sessionId: string;
   /** Token de sessão do Google Places (agrupa busca + detalhes na cobrança). */
   placesToken: string;
@@ -28,6 +42,7 @@ export interface QuizState extends QuizAnswers {
 export type Action =
   | { type: "next" }
   | { type: "back" }
+  | { type: "goTo"; step: number }
   | { type: "business"; business: PlaceInfo | null }
   | { type: "goal"; goal: number }
   | { type: "toggleSpot"; spot: SpotId }
@@ -50,6 +65,7 @@ export function initialState(search = ""): QuizState {
   }
   return {
     step: 0,
+    maxStep: 0,
     sessionId: crypto.randomUUID(),
     placesToken: crypto.randomUUID(),
     business: null,
@@ -75,7 +91,8 @@ export function loadState(search: string): QuizState {
     if (STEPS[saved.step] === "pronto") return fresh;
     // A tela de cálculo não faz sentido ao voltar: retoma no plano.
     const step = STEPS[saved.step] === "calculando" ? STEPS.indexOf("plano") : saved.step;
-    return { ...fresh, ...saved, step, utm: Object.keys(fresh.utm).length ? fresh.utm : saved.utm };
+    const maxStep = Math.max(step, typeof saved.maxStep === "number" ? saved.maxStep : step);
+    return { ...fresh, ...saved, step, maxStep, utm: Object.keys(fresh.utm).length ? fresh.utm : saved.utm };
   } catch {
     return fresh;
   }
@@ -93,18 +110,15 @@ export function reducer(state: QuizState, action: Action): QuizState {
   switch (action.type) {
     case "next": {
       const step = Math.min(state.step + 1, STEPS.length - 1);
-      // Ao chegar na meta, já deixa a opção do meio marcada.
-      if (STEPS[step] === "meta" && state.goal === null) {
-        const options = goalOptions(state.business?.reviews);
-        return { ...state, step, goal: options[Math.min(1, options.length - 1)]! };
-      }
-      return { ...state, step };
+      return withDefaults({ ...state, step, maxStep: Math.max(state.maxStep, step) });
     }
     case "back": {
       let step = Math.max(0, state.step - 1);
       if (STEPS[step] === "calculando") step -= 1; // não repete o cálculo ao voltar
       return { ...state, step };
     }
+    case "goTo":
+      return canJumpTo(state, action.step) ? withDefaults({ ...state, step: action.step }) : state;
     case "business":
       // Trocar de negócio zera a meta (as opções dependem do total atual).
       return { ...state, business: action.business, goal: null, placesToken: action.business ? state.placesToken : crypto.randomUUID() };
@@ -127,4 +141,43 @@ export function reducer(state: QuizState, action: Action): QuizState {
     case "reset":
       return initialState();
   }
+}
+
+/** Ao chegar na meta sem resposta, já deixa a opção do meio marcada. */
+function withDefaults(state: QuizState): QuizState {
+  if (STEPS[state.step] === "meta" && state.goal === null) {
+    const options = goalOptions(state.business?.reviews);
+    return { ...state, goal: options[Math.min(1, options.length - 1)]! };
+  }
+  return state;
+}
+
+/** A resposta da etapa permite avançar? */
+export function canAdvance(key: StepKey, s: QuizState): boolean {
+  switch (key) {
+    case "negocio":
+      return Boolean(s.business);
+    case "meta":
+      return s.goal !== null;
+    case "onde-paga":
+      return s.spots.length > 0;
+    case "clientes":
+      return s.clients !== null;
+    case "contato":
+      return s.contact.name.trim().length >= 2 && normalizeBrPhone(s.contact.whatsapp) !== null;
+    default:
+      return true;
+  }
+}
+
+/**
+ * Pode ir direto para a etapa pelo menu? Só etapas já alcançadas, fora o
+ * cálculo e a conclusão, e com todas as respostas anteriores válidas.
+ */
+export function canJumpTo(state: QuizState, target: number): boolean {
+  const key = STEPS[target];
+  if (!key || key === "calculando" || key === "pronto") return false;
+  if (target > state.maxStep) return false;
+  for (let i = 0; i < target; i++) if (!canAdvance(STEPS[i]!, state)) return false;
+  return true;
 }
