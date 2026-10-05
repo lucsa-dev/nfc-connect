@@ -113,11 +113,12 @@ export async function saveLead(payload: LeadPayload): Promise<{ ok: boolean; err
   const supabase = createAdminClient();
 
   // Leads já tratados no painel não são alterados pelo quiz.
-  const { data: existing } = await supabase
+  const { data: existing, error: readError } = await supabase
     .from("leads")
     .select("status")
     .eq("session_id", data.sessionId)
     .maybeSingle();
+  if (readError) console.error("Falha ao ler lead", { code: readError.code, message: readError.message });
   if (existing && (existing.status === "convertido" || existing.status === "descartado")) return { ok: true };
 
   const row = {
@@ -153,8 +154,10 @@ export async function saveLead(payload: LeadPayload): Promise<{ ok: boolean; err
 
   const { error } = await supabase.from("leads").upsert(row, { onConflict: "session_id" });
   if (error) {
-    console.error("Falha ao salvar lead", error);
-    return { ok: false, error: "Não foi possível salvar" };
+    console.error("Falha ao salvar lead", { code: error.code, message: error.message, details: error.details, hint: error.hint });
+    // Em desenvolvimento, mostra o motivo para facilitar o diagnóstico.
+    const detail = process.env.NODE_ENV === "production" ? "" : ` (${error.code}: ${error.message})`;
+    return { ok: false, error: `Não foi possível salvar${detail}` };
   }
   return { ok: true };
 }
