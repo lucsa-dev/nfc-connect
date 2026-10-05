@@ -244,10 +244,6 @@ export default async function LandingPage() {
               <div className="absolute right-0 bottom-4 z-10">
                 <PhoneMock />
               </div>
-              <span className="absolute top-[45%] left-[48%] z-20 flex size-4">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#4285F4] opacity-60 motion-reduce:animate-none" />
-                <span className="relative inline-flex size-4 rounded-full bg-[#4285F4] ring-4 ring-background" />
-              </span>
             </div>
           </div>
         </section>
