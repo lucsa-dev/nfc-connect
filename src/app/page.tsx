@@ -20,15 +20,24 @@ import {
   TimerIcon,
   UtensilsIcon,
   XIcon,
+  CreditCardIcon,
+  GlobeIcon,
+  CameraIcon,
+  LinkIcon,
+  MessageCircleIcon,
+  PaletteIcon,
+  UtensilsCrossedIcon,
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { ArtPreview, type ArtData } from "@/components/cards/print-art";
 import { CtaButton } from "@/components/landing/cta-button";
 import { PhoneMock } from "@/components/landing/phone-mock";
+import { WhatsAppFab } from "@/components/landing/whatsapp-fab";
 import { ThemeSwitcher } from "@/components/theme/theme-switcher";
 import { CARD_COPY, displayUrl, qrPath, STYLES } from "@/lib/card";
 import { formatBRL, PRICING } from "@/lib/pricing";
-import { siteConfig } from "@/lib/site-config";
+import { getSiteSettings } from "@/lib/settings";
+import { siteConfig, whatsappHref } from "@/lib/site-config";
 import { getSiteUrl } from "@/lib/urls";
 
 export const metadata: Metadata = {
@@ -49,6 +58,7 @@ const NAV = [
   { href: "#como-funciona", label: "Como funciona" },
   { href: "#vantagens", label: "Vantagens" },
   { href: "#modelos", label: "Modelos" },
+  { href: "#personalizado", label: "Personalizado" },
   { href: "#duvidas", label: "Dúvidas" },
 ];
 
@@ -143,8 +153,8 @@ const FAQ = [
     a: "Colada no balcão, no caixa ou na recepção, onde o cliente está satisfeito e com o celular na mão. O NFC e o QR Code ficam na frente; o verso é colado na superfície. Para mesas ou para o atendente entregar junto com a conta, também temos o cartão.",
   },
   {
-    q: "Também serve para outras coisas?",
-    a: "Sim. Fazemos placas e cartões para pagamento por Pix e cartão de visita com Instagram ou site, todos com NFC e QR Code.",
+    q: "Vocês fazem placas personalizadas?",
+    a: "Sim. Além do modelo padrão TopTap, fazemos placas e cartões com a logo e as cores do seu negócio, sob orçamento pelo WhatsApp. E o toque pode levar para outros destinos: Instagram, WhatsApp, cardápio digital, pagamento por Pix, site ou localização no Maps.",
   },
 ];
 
@@ -158,7 +168,11 @@ function SectionTitle({ eyebrow, title, text }: { eyebrow: string; title: string
   );
 }
 
-export default function LandingPage() {
+// Página estática: regenerada quando as configurações mudam no painel.
+export const revalidate = 3600;
+
+export default async function LandingPage() {
+  const settings = await getSiteSettings();
   return (
     <div className="flex flex-1 flex-col">
       <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur">
@@ -369,9 +383,72 @@ export default function LandingPage() {
                 <ArtPreview product="cartao" style="escuro" side="back" data={demoCard} />
               </div>
             </div>
-            <div className="mt-12 flex flex-col items-center gap-3 text-center">
-              <p className="max-w-xl text-pretty text-muted-foreground">Pedidos em grande quantidade podem ser personalizados com o nome do seu negócio. Também fazemos placas e cartões para pagamento por Pix e cartão de visita digital.</p>
+            <div className="mt-12 flex justify-center">
               <CtaButton>Montar meu kit</CtaButton>
+            </div>
+
+            {/* Personalizados */}
+            <div id="personalizado" className="mt-16 scroll-mt-20 rounded-3xl bg-card p-6 ring-1 ring-foreground/10 md:p-10">
+              <div className="mx-auto max-w-2xl text-center">
+                <p className="mb-2 text-sm font-semibold text-primary">Personalizado</p>
+                <h3 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
+                  Com a cara do seu negócio, levando para onde você quiser
+                </h3>
+                <p className="mt-3 text-pretty text-muted-foreground">
+                  Além do modelo padrão TopTap, criamos placas e cartões com a identidade visual da sua marca e que levam
+                  o cliente para outros destinos, não só para a avaliação no Google.
+                </p>
+              </div>
+              <div className="mt-8 grid gap-6 md:grid-cols-2">
+                <div className="rounded-2xl bg-muted/60 p-5">
+                  <PaletteIcon className="mb-3 size-6 text-primary" />
+                  <h4 className="mb-2 font-semibold">Sua identidade visual</h4>
+                  <ul className="grid gap-1.5 text-muted-foreground">
+                    {["Sua logo e as cores da sua marca", "Textos e chamadas do seu jeito", "Placa, cartão ou os dois, no formato que precisar"].map((t) => (
+                      <li key={t} className="flex gap-2">
+                        <CheckIcon className="mt-1 size-4 shrink-0 text-[#34A853]" /> {t}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="rounded-2xl bg-muted/60 p-5">
+                  <LinkIcon className="mb-3 size-6 text-primary" />
+                  <h4 className="mb-2 font-semibold">Outros destinos para o toque</h4>
+                  <ul className="flex flex-wrap gap-2">
+                    {[
+                      { icon: CameraIcon, label: "Instagram" },
+                      { icon: MessageCircleIcon, label: "WhatsApp" },
+                      { icon: UtensilsCrossedIcon, label: "Cardápio digital" },
+                      { icon: CreditCardIcon, label: "Pagamento por Pix" },
+                      { icon: GlobeIcon, label: "Site ou loja online" },
+                      { icon: MapPinIcon, label: "Localização no Maps" },
+                    ].map(({ icon: Icon, label }) => (
+                      <li key={label} className="flex items-center gap-1.5 rounded-full bg-background px-3 py-1.5 text-sm ring-1 ring-foreground/10">
+                        <Icon className="size-4 text-muted-foreground" /> {label}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-3 text-sm text-muted-foreground">E o destino pode ser trocado depois, sem reimprimir.</p>
+                </div>
+              </div>
+              <div className="mt-8 flex flex-col items-center gap-2 text-center">
+                {settings.whatsapp ? (
+                  <a
+                    href={whatsappHref(
+                      settings.whatsapp,
+                      "Olá! Quero um orçamento de placa/cartão TopTap personalizado com a identidade visual do meu negócio.",
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#25D366] px-5 text-base font-semibold text-[#063D1E] hover:brightness-95"
+                  >
+                    <MessageCircleIcon className="size-5" /> Pedir orçamento no WhatsApp
+                  </a>
+                ) : (
+                  <CtaButton>Pedir orçamento</CtaButton>
+                )}
+                <p className="text-sm text-muted-foreground">Personalizados são feitos sob orçamento.</p>
+              </div>
             </div>
           </div>
         </section>
@@ -425,10 +502,11 @@ export default function LandingPage() {
             </Link>
           </div>
         </div>
-        <p className="mx-auto w-full max-w-6xl px-4 pb-8 text-xs text-muted-foreground">
+        <p className="mx-auto w-full max-w-6xl px-4 pb-24 text-xs text-muted-foreground sm:pb-8">
           Google e Google Maps são marcas da Google LLC. A TopTap é um serviço independente, sem afiliação com o Google.
         </p>
       </footer>
+      <WhatsAppFab number={settings.whatsapp} />
     </div>
   );
 }
