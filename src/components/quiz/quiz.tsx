@@ -2,7 +2,6 @@
 
 import {
   ArrowLeftIcon,
-  BarChart3Icon,
   CheckCircle2Icon,
   CheckIcon,
   CircleAlertIcon,
@@ -11,8 +10,6 @@ import {
   MinusIcon,
   OctagonAlertIcon,
   PlusIcon,
-  QrCodeIcon,
-  RefreshCwIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useReducer, useState, useTransition } from "react";
@@ -166,33 +163,6 @@ function StepBusiness({ state, dispatch, placesEnabled }: StepProps) {
   );
 }
 
-function StepHowItWorks({ state, art }: StepProps) {
-  const items = [
-    { icon: CheckCircle2Icon, text: "O cliente aproxima o celular da placa e a avaliação abre na hora" },
-    { icon: QrCodeIcon, text: "QR Code de reserva: funciona em qualquer celular, com ou sem NFC" },
-    { icon: RefreshCwIcon, text: "O destino pode ser trocado sem reimprimir a placa" },
-    { icon: BarChart3Icon, text: "Cada toque é contado: NFC ou QR Code, por dia" },
-  ];
-  return (
-    <>
-      <Title>
-        Como a placa vai funcionar na <Highlight>{businessName(state)}</Highlight>
-      </Title>
-      <div className="mt-6 grid items-center gap-6 sm:grid-cols-[1fr_1.2fr]">
-        <ArtPreview product="placa-quadrada" style={state.style} data={art} className="mx-auto w-full max-w-[14rem]" />
-        <ul className="grid gap-3">
-          {items.map(({ icon: Icon, text }) => (
-            <li key={text} className="flex gap-3">
-              <Icon className="mt-0.5 size-5 shrink-0 text-primary" />
-              <span>{text}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </>
-  );
-}
-
 function StepGoal({ state, dispatch }: StepProps) {
   const current = state.business?.reviews ?? null;
   const options = goalOptions(current);
@@ -220,10 +190,12 @@ function StepGoal({ state, dispatch }: StepProps) {
 }
 
 function StepSpots({ state, dispatch }: StepProps) {
+  const plaque = state.spots.some((s) => SPOTS.find((x) => x.id === s)?.kind === "plaque");
+  const cards = state.spots.some((s) => SPOTS.find((x) => x.id === s)?.kind === "card");
   return (
     <>
       <Title>Onde o cliente está quando termina o atendimento?</Title>
-      <Lead>Marque todos que se aplicam. É aí que a placa ou o cartão fazem mais efeito.</Lead>
+      <Lead>Marque todos que se aplicam e diga quantos são. Assim montamos o kit certo.</Lead>
       <div className="mt-6 grid gap-3">
         {SPOTS.map((s) => (
           <Option key={s.id} multi hint={s.hint} selected={state.spots.includes(s.id)} onClick={() => dispatch({ type: "toggleSpot", spot: s.id })}>
@@ -231,6 +203,14 @@ function StepSpots({ state, dispatch }: StepProps) {
           </Option>
         ))}
       </div>
+      {(plaque || cards) && (
+        <div className="mt-6 grid gap-3">
+          {plaque && (
+            <Stepper label="Balcões, caixas ou recepções" value={state.counters} max={20} onChange={(value) => dispatch({ type: "counters", value })} />
+          )}
+          {cards && <Stepper label="Mesas ou atendentes" value={state.tables} max={200} onChange={(value) => dispatch({ type: "tables", value })} />}
+        </div>
+      )}
     </>
   );
 }
@@ -247,23 +227,6 @@ function StepClients({ state, dispatch }: StepProps) {
             {b.label}
           </Option>
         ))}
-      </div>
-    </>
-  );
-}
-
-function StepPoints({ state, dispatch }: StepProps) {
-  const plaque = state.spots.some((s) => SPOTS.find((x) => x.id === s)?.kind === "plaque") || state.spots.length === 0;
-  const cards = state.spots.some((s) => SPOTS.find((x) => x.id === s)?.kind === "card");
-  return (
-    <>
-      <Title>Quantos pontos de atendimento?</Title>
-      <Lead>Assim montamos o kit certo: uma placa em cada balcão e um cartão em cada mesa ou com cada atendente.</Lead>
-      <div className="mt-6 grid gap-3">
-        {plaque && (
-          <Stepper label="Balcões, caixas ou recepções" value={state.counters} max={20} onChange={(value) => dispatch({ type: "counters", value })} />
-        )}
-        {cards && <Stepper label="Mesas ou atendentes" value={state.tables} max={200} onChange={(value) => dispatch({ type: "tables", value })} />}
       </div>
     </>
   );
@@ -468,11 +431,9 @@ function StepDone({ state, dispatch, art, whatsapp }: StepProps) {
 
 const STEP_COMPONENTS: Record<StepKey, (p: StepProps & { error: string | null }) => React.ReactNode> = {
   negocio: StepBusiness,
-  "como-funciona": StepHowItWorks,
   meta: StepGoal,
   "onde-paga": StepSpots,
   clientes: StepClients,
-  pontos: StepPoints,
   calculando: StepCalculating,
   plano: StepPlan,
   contato: StepContact,
@@ -480,7 +441,6 @@ const STEP_COMPONENTS: Record<StepKey, (p: StepProps & { error: string | null })
 };
 
 const NEXT_LABEL: Partial<Record<StepKey, string>> = {
-  "como-funciona": "Continuar",
   plano: "Quero esse plano",
   contato: "Enviar pedido",
 };

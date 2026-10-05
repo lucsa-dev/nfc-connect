@@ -23,7 +23,7 @@ describe("quiz: estado", () => {
   it("avança e volta sem repetir o cálculo", () => {
     let s = { ...initialState(), step: idx("plano") };
     s = reducer(s, { type: "back" });
-    expect(STEPS[s.step]).toBe("pontos");
+    expect(STEPS[s.step]).toBe("clientes");
     s = reducer({ ...s, step: 0 }, { type: "back" });
     expect(s.step).toBe(0);
     s = reducer({ ...s, step: STEPS.length - 1 }, { type: "next" });

@@ -4,11 +4,9 @@ import { goalOptions, normalizeBrPhone, type ClientBandId, type QuizAnswers, typ
 
 export const STEPS = [
   "negocio",
-  "como-funciona",
   "meta",
   "onde-paga",
   "clientes",
-  "pontos",
   "calculando",
   "plano",
   "contato",
@@ -19,11 +17,9 @@ export type StepKey = (typeof STEPS)[number];
 /** Etapas mostradas no menu do topo (cálculo e conclusão não entram). */
 export const MENU_STEPS: Array<{ key: StepKey; label: string }> = [
   { key: "negocio", label: "Negócio" },
-  { key: "como-funciona", label: "Como funciona" },
   { key: "meta", label: "Meta" },
   { key: "onde-paga", label: "Atendimento" },
   { key: "clientes", label: "Clientes" },
-  { key: "pontos", label: "Pontos" },
   { key: "plano", label: "Plano" },
   { key: "contato", label: "Contato" },
 ];
@@ -53,7 +49,7 @@ export type Action =
   | { type: "contact"; contact: Partial<QuizState["contact"]> }
   | { type: "reset" };
 
-export const STORAGE_KEY = "toptap-quiz-v1";
+export const STORAGE_KEY = "toptap-quiz-v2";
 const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid", "fbclid"];
 
 export function initialState(search = ""): QuizState {
