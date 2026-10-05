@@ -17,14 +17,15 @@ export function StepMenu({ state, onSelect }: { state: QuizState; onSelect: (ste
     const el = listRef.current?.querySelector<HTMLElement>('[aria-current="step"]');
     if (!el || !listRef.current) return;
     const list = listRef.current;
-    list.scrollTo({ left: el.offsetLeft - (list.clientWidth - el.clientWidth) / 2, behavior: "smooth" });
+    // offsetLeft é relativo à lista (ela é `relative`); centraliza a etapa atual.
+    list.scrollTo({ left: Math.max(0, el.offsetLeft - (list.clientWidth - el.clientWidth) / 2), behavior: "smooth" });
   }, [currentKey]);
 
   return (
     <nav aria-label="Etapas do pedido" className="border-b bg-background/90">
       <ol
         ref={listRef}
-        className="mx-auto flex w-full max-w-xl gap-1 overflow-x-auto px-3 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="relative mx-auto flex w-fit max-w-full gap-1 overflow-x-auto px-3 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {MENU_STEPS.map(({ key, label }, i) => {
           const index = STEPS.indexOf(key);
