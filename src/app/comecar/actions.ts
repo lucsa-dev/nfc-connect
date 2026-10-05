@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { normalizeCep, parseIbgeCities, parseViaCep, searchCities, type CepInfo, type City } from "@/lib/br-location";
 import { STYLES } from "@/lib/card";
 import {
   autocompleteBody,
@@ -57,6 +58,54 @@ export async function getPlace(placeId: string, sessionToken: string): Promise<P
     return parsePlaceDetails(await res.json());
   } catch (error) {
     console.error(error);
+    return null;
+  }
+}
+
+// Cidade e CEP -------------------------------------------------------------------
+
+let citiesCache: Promise<City[]> | null = null;
+
+/** Lista oficial de municípios do IBGE (em cache no servidor por 1 dia). */
+function loadCities(): Promise<City[]> {
+  citiesCache ??= fetch("https://servicodados.ibge.gov.br/api/v1/localidades/municipios?view=nivelado", {
+    next: { revalidate: 86400 },
+    signal: AbortSignal.timeout(8000),
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error(`IBGE ${res.status}`);
+      return res.json();
+    })
+    .then(parseIbgeCities)
+    .catch((error) => {
+      console.error("Falha ao carregar municípios do IBGE", error);
+      citiesCache = null; // tenta de novo na próxima busca
+      return [];
+    });
+  return citiesCache;
+}
+
+/** Pré-carrega a lista do IBGE quando o formulário manual abre. */
+export async function warmCities(): Promise<void> {
+  await loadCities();
+}
+
+export async function findCities(query: string): Promise<City[]> {
+  const q = query.trim().slice(0, 60);
+  if (q.length < 2) return [];
+  return searchCities(await loadCities(), q);
+}
+
+/** Cidade e UF a partir do CEP (ViaCEP). */
+export async function lookupCep(input: string): Promise<CepInfo | null> {
+  const cep = normalizeCep(input);
+  if (!cep) return null;
+  try {
+    const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`, { cache: "no-store", signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return null;
+    return parseViaCep(await res.json());
+  } catch (error) {
+    console.error("Falha ao consultar ViaCEP", error);
     return null;
   }
 }

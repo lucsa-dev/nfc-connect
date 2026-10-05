@@ -16,5 +16,5 @@ export const revalidate = 3600;
 
 export default async function StartPage() {
   const { whatsapp } = await getSiteSettings();
-  return <QuizLoader whatsapp={whatsapp} art={{ copy: CARD_COPY.review, qr: qrPath(siteUrl), url: displayUrl(siteUrl) }} />;
+  return <QuizLoader whatsapp={whatsapp} placesEnabled={Boolean(process.env.GOOGLE_PLACES_API_KEY)} art={{ copy: CARD_COPY.review, qr: qrPath(siteUrl), url: displayUrl(siteUrl) }} />;
 }

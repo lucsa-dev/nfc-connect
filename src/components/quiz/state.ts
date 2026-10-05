@@ -119,9 +119,21 @@ export function reducer(state: QuizState, action: Action): QuizState {
     }
     case "goTo":
       return canJumpTo(state, action.step) ? withDefaults({ ...state, step: action.step }) : state;
-    case "business":
+    case "business": {
       // Trocar de negócio zera a meta (as opções dependem do total atual).
-      return { ...state, business: action.business, goal: null, placesToken: action.business ? state.placesToken : crypto.randomUUID() };
+      const same =
+        action.business !== null &&
+        state.business !== null &&
+        action.business.placeId === state.business.placeId &&
+        action.business.name === state.business.name;
+      return {
+        ...state,
+        business: action.business,
+        goal: same ? state.goal : null,
+        // Novo token de sessão do Google a cada negócio escolhido.
+        placesToken: crypto.randomUUID(),
+      };
+    }
     case "goal":
       return { ...state, goal: action.goal };
     case "toggleSpot": {

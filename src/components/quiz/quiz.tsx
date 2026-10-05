@@ -51,6 +51,7 @@ interface StepProps {
   art: ArtData;
   /** WhatsApp da TopTap (configurado no painel) */
   whatsapp: string | null;
+  placesEnabled: boolean;
 }
 
 const businessName = (s: QuizState) => s.business?.name ?? "seu negócio";
@@ -144,15 +145,20 @@ function Stepper({ label, value, onChange, max }: { label: string; value: number
 
 // Telas ----------------------------------------------------------------------------
 
-function StepBusiness({ state, dispatch }: StepProps) {
+function StepBusiness({ state, dispatch, placesEnabled }: StepProps) {
   return (
     <>
       <Title>Vamos preparar a sua placa TopTap</Title>
-      <Lead>Qual é o nome do seu negócio no Google? Busque como ele aparece no Google Maps.</Lead>
+      <Lead>
+        {placesEnabled
+          ? "Qual é o nome do seu negócio no Google? Busque como ele aparece no Google Maps."
+          : "Conte qual é o seu negócio e em que cidade ele fica."}
+      </Lead>
       <div className="mt-6">
         <BusinessSearch
           value={state.business}
           sessionToken={state.placesToken}
+          placesEnabled={placesEnabled}
           onChange={(business) => dispatch({ type: "business", business })}
         />
       </div>
@@ -481,7 +487,7 @@ const NEXT_LABEL: Partial<Record<StepKey, string>> = {
 
 // Quiz -----------------------------------------------------------------------------
 
-export function Quiz({ art, whatsapp }: { art: ArtData; whatsapp: string | null }) {
+export function Quiz({ art, whatsapp, placesEnabled }: { art: ArtData; whatsapp: string | null; placesEnabled: boolean }) {
   const [state, dispatch] = useReducer(reducer, undefined, () => loadState(window.location.search));
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -544,7 +550,7 @@ export function Quiz({ art, whatsapp }: { art: ArtData; whatsapp: string | null 
       </header>
 
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pt-6 pb-32">
-        <Step state={state} dispatch={dispatch} art={art} whatsapp={whatsapp} error={error} />
+        <Step state={state} dispatch={dispatch} art={art} whatsapp={whatsapp} placesEnabled={placesEnabled} error={error} />
       </main>
 
       {showNav && (
