@@ -28,6 +28,7 @@ Cada link ganha um endereço público `https://seu-dominio.com.br/{negocio}/{lin
 - Painel de acessos (7, 30 ou 90 dias): total, visitantes únicos, acessos por dia, quebras por origem, dispositivo, sistema, navegador e cidade, e os últimos acessos. Exportação em CSV.
 - Robôs de pré-visualização (WhatsApp, Instagram, Google...) ficam registrados mas não entram no contador.
 - Landing page de vendas na home e modelos de cartão prontos para impressão (gráfica ou folha A4).
+- Quiz de vendas em `/comecar`: busca o negócio no Google, mostra diagnóstico, meta, prazo estimado e kit recomendado, e captura o contato. Os pedidos aparecem em **Painel → Pedidos**, onde um clique cria o negócio e o link de avaliação.
 - Tema claro (padrão) e escuro.
 
 ## Rodando localmente
@@ -56,6 +57,8 @@ npm run dev
 | `SUPABASE_SECRET_KEY` | Chave secreta (`sb_secret_...`) ou a antiga `service_role`. Usada **só no servidor**, nas rotas públicas de redirecionamento e Pix |
 | `NEXT_PUBLIC_SITE_URL` | Domínio usado nos links das TAGs e QR Codes (ex.: `https://cartoes.com.br`) |
 | `IP_HASH_SALT` | Texto aleatório para anonimizar IPs (`openssl rand -hex 32`) |
+| `GOOGLE_PLACES_API_KEY` | Chave da Google Places API (New), só no servidor. Sem ela, o quiz pede nome e cidade manualmente |
+| `NEXT_PUBLIC_WHATSAPP_NUMBER` | WhatsApp da TopTap (55 + DDD + número), usado no fim do quiz |
 
 ## Deploy na Vercel
 
@@ -64,6 +67,15 @@ npm run dev
 3. Configure o domínio definitivo **antes** de gravar as TAGs: os endereços gravados não podem ser alterados depois.
 
 Se `NEXT_PUBLIC_SITE_URL` não estiver definida, o sistema usa o domínio de produção da Vercel (`VERCEL_PROJECT_PRODUCTION_URL`).
+
+## Quiz de vendas (`/comecar`)
+
+1. Busca do negócio (Google Places Autocomplete + Place Details, chamados no servidor).
+2. Como funciona, meta, onde o cliente paga, clientes por dia e pontos de atendimento.
+3. Plano: diagnóstico, prazo estimado e kit recomendado com preço e estilo da placa.
+4. Nome + WhatsApp: o pedido vira lead em `leads` e o cliente pode enviar o resumo pelo WhatsApp.
+
+O progresso é salvo a cada etapa (status `quiz`) e vira `lead` ao receber o WhatsApp. Kit, valor e prazo são recalculados no servidor. Preços em [`src/lib/pricing.ts`](src/lib/pricing.ts); regras da projeção em [`src/lib/quiz.ts`](src/lib/quiz.ts) (`PROJECTION`: 26 dias × 1% dos clientes avaliando, ajuste com dados reais).
 
 ## Como funciona o redirecionamento
 
