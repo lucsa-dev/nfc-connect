@@ -27,6 +27,7 @@ import { CtaButton } from "@/components/landing/cta-button";
 import { PhoneMock } from "@/components/landing/phone-mock";
 import { ThemeSwitcher } from "@/components/theme/theme-switcher";
 import { CARD_COPY, displayUrl, qrPath, STYLES } from "@/lib/card";
+import { formatBRL, PRICING } from "@/lib/pricing";
 import { siteConfig } from "@/lib/site-config";
 import { getSiteUrl } from "@/lib/urls";
 
@@ -199,7 +200,12 @@ export default function LandingPage() {
                 A placa TopTap fica fixa no seu balcão: o cliente aproxima o celular ou escaneia o QR Code e cai direto na
                 tela de avaliação do seu negócio. Sem procurar no Google, sem digitar nada, sem baixar app.
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
+              <p className="mt-5 text-lg">
+                <span className="text-muted-foreground">Placa a partir de </span>
+                <span className="font-heading text-2xl font-semibold">{formatBRL(PRICING.plaque)}</span>
+                <span className="text-muted-foreground"> · pagamento único, sem mensalidade</span>
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
                 <CtaButton />
                 <a
                   href="#como-funciona"
@@ -365,7 +371,7 @@ export default function LandingPage() {
             </div>
             <div className="mt-12 flex flex-col items-center gap-3 text-center">
               <p className="max-w-xl text-pretty text-muted-foreground">Pedidos em grande quantidade podem ser personalizados com o nome do seu negócio. Também fazemos placas e cartões para pagamento por Pix e cartão de visita digital.</p>
-              <CtaButton message="Olá! Quero um orçamento de placas TopTap para o meu negócio.">Pedir orçamento</CtaButton>
+              <CtaButton>Montar meu kit</CtaButton>
             </div>
           </div>
         </section>
