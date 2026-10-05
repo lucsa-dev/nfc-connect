@@ -5,6 +5,7 @@ import {
   diagnose,
   estimateTimeline,
   formatBrPhone,
+  goalLabel,
   goalOptions,
   kitPriceLabel,
   monthlyNewReviews,
@@ -29,19 +30,24 @@ const place = (over: Partial<PlaceInfo> = {}): PlaceInfo => ({
 });
 
 describe("goalOptions", () => {
-  it("usa metas fixas para quem tem poucas avaliações", () => {
-    expect(goalOptions(0)).toEqual([50, 100, 250]);
-    expect(goalOptions(null)).toEqual([50, 100, 250]);
-    expect(goalOptions(12)).toEqual([50, 100, 250]);
+  it("oferece de 50 até 1.000 para quem tem poucas avaliações", () => {
+    expect(goalOptions(0)).toEqual([50, 100, 250, 500, 1000]);
+    expect(goalOptions(null)).toEqual([50, 100, 250, 500, 1000]);
   });
 
-  it("multiplica o total atual e arredonda", () => {
-    expect(goalOptions(56)).toEqual([120, 250, 600]);
-    expect(goalOptions(430)).toEqual([900, 1800, 4300]);
+  it("começa no próximo degrau acima do total atual", () => {
+    expect(goalOptions(56)).toEqual([100, 250, 500, 1000, 2500]);
+    expect(goalOptions(430)).toEqual([500, 1000, 2500, 5000, 10000]);
   });
 
-  it("todas as opções são maiores que o atual", () => {
-    for (const c of [0, 24, 25, 99, 1234]) for (const g of goalOptions(c)) expect(g).toBeGreaterThan(c);
+  it("todas as opções são maiores que o atual, mesmo acima da escada", () => {
+    for (const c of [0, 24, 50, 99, 1234, 30000]) for (const g of goalOptions(c)) expect(g).toBeGreaterThan(c);
+  });
+
+  it("a maior opção aparece como 'ou mais'", () => {
+    const options = goalOptions(0);
+    expect(goalLabel(1000, options)).toBe("1.000 ou mais");
+    expect(goalLabel(500, options)).toBe("500 avaliações");
   });
 });
 

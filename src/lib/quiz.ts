@@ -35,17 +35,20 @@ export interface QuizAnswers {
 
 // Meta -------------------------------------------------------------------------
 
-function nice(n: number): number {
-  const step = n < 200 ? 10 : n < 1000 ? 50 : 100;
-  return Math.ceil(n / step) * step;
-}
+/** Degraus de meta; a última opção mostrada aparece como "X ou mais". */
+export const GOAL_LADDER = [50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000] as const;
 
-/** Opções de meta a partir do total atual (≈ 2×, 4× e 10×, arredondadas). */
+/** Até 5 metas acima do total atual (ex.: 50, 100, 250, 500, 1.000 ou mais). */
 export function goalOptions(current: number | null | undefined): number[] {
   const c = Math.max(0, current ?? 0);
-  const raw = c < 25 ? [50, 100, 250] : [c * 2, c * 4, c * 10];
-  const options = [...new Set(raw.map(nice))].filter((n) => n > c);
-  return options.length ? options : [nice(c + 50)];
+  const options = GOAL_LADDER.filter((g) => g > c).slice(0, 5);
+  return options.length ? options : [Math.ceil((c + 1) / 1000) * 1000 * 2];
+}
+
+/** Rótulo da meta; a maior opção vira "ou mais". */
+export function goalLabel(goal: number, options: number[]): string {
+  const n = goal.toLocaleString("pt-BR");
+  return goal === options[options.length - 1] ? `${n} ou mais` : `${n} avaliações`;
 }
 
 // Projeção ---------------------------------------------------------------------
