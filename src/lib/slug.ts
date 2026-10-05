@@ -14,6 +14,7 @@ export const RESERVED_BUSINESS_SLUGS = new Set([
   "login",
   "logout",
   "admin",
+  "comecar",
   "_next",
   "static",
   "public",
