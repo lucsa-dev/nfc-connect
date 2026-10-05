@@ -45,6 +45,119 @@ export type Database = {
         }
         Relationships: []
       }
+      leads: {
+        Row: {
+          business_id: string | null
+          cards: number | null
+          clients_band: string | null
+          contact_name: string | null
+          counters: number | null
+          created_at: string
+          estimate: string | null
+          goal: number | null
+          id: string
+          marketing_consent: boolean
+          notes: string | null
+          place_address: string | null
+          place_category: string | null
+          place_city: string | null
+          place_id: string | null
+          place_last_review_at: string | null
+          place_maps_url: string | null
+          place_name: string | null
+          place_rating: number | null
+          place_reviews: number | null
+          place_state: string | null
+          plaques: number | null
+          session_id: string
+          spots: string[]
+          status: string
+          step: string | null
+          style: string | null
+          tables: number | null
+          total_cents: number | null
+          updated_at: string
+          utm: Json
+          whatsapp: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          cards?: number | null
+          clients_band?: string | null
+          contact_name?: string | null
+          counters?: number | null
+          created_at?: string
+          estimate?: string | null
+          goal?: number | null
+          id?: string
+          marketing_consent?: boolean
+          notes?: string | null
+          place_address?: string | null
+          place_category?: string | null
+          place_city?: string | null
+          place_id?: string | null
+          place_last_review_at?: string | null
+          place_maps_url?: string | null
+          place_name?: string | null
+          place_rating?: number | null
+          place_reviews?: number | null
+          place_state?: string | null
+          plaques?: number | null
+          session_id: string
+          spots?: string[]
+          status?: string
+          step?: string | null
+          style?: string | null
+          tables?: number | null
+          total_cents?: number | null
+          updated_at?: string
+          utm?: Json
+          whatsapp?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          cards?: number | null
+          clients_band?: string | null
+          contact_name?: string | null
+          counters?: number | null
+          created_at?: string
+          estimate?: string | null
+          goal?: number | null
+          id?: string
+          marketing_consent?: boolean
+          notes?: string | null
+          place_address?: string | null
+          place_category?: string | null
+          place_city?: string | null
+          place_id?: string | null
+          place_last_review_at?: string | null
+          place_maps_url?: string | null
+          place_name?: string | null
+          place_rating?: number | null
+          place_reviews?: number | null
+          place_state?: string | null
+          plaques?: number | null
+          session_id?: string
+          spots?: string[]
+          status?: string
+          step?: string | null
+          style?: string | null
+          tables?: number | null
+          total_cents?: number | null
+          updated_at?: string
+          utm?: Json
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       link_visits: {
         Row: {
           browser: string | null
