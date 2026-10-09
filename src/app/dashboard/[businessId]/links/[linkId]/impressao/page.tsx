@@ -126,7 +126,7 @@ export default async function PrintPage({ params, searchParams }: Props) {
         )}
       </div>
 
-      <PrintSheets format={format} product={product.id} style={style.id} data={data} />
+      <PrintSheets format={format} product={product.id} style={style.id} items={[data]} />
     </>
   );
 }
