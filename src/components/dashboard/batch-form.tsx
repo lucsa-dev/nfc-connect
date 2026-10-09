@@ -1,13 +1,14 @@
 "use client";
 
-import { CheckIcon, MinusIcon, PlusIcon } from "lucide-react";
+import { MinusIcon, PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { createBatch } from "@/app/dashboard/cartoes/actions";
-import { ArtPreview, type ArtData } from "@/components/cards/print-art";
+import { ProductPicker, StylePicker } from "@/components/cards/piece-picker";
+import type { ArtData } from "@/components/cards/print-art";
 import { useActionFeedback } from "@/components/dashboard/use-action-feedback";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getProduct, getStyle, PRODUCTS, STYLES, type ProductId, type StyleId } from "@/lib/card";
+import { getProduct, getStyle, type ProductId, type StyleId } from "@/lib/card";
 import { BATCH_MAX } from "@/lib/cards";
 
 const QUICK = [10, 25, 50, 100];
@@ -23,43 +24,6 @@ function Step({ n, title, hint, error, children }: { n: number; title: string; h
       {children}
       {error && <p className="text-sm text-destructive">{error}</p>}
     </section>
-  );
-}
-
-/** Opção visual (rádio escondido + cartão clicável). */
-function Option({
-  name,
-  value,
-  checked,
-  onSelect,
-  label,
-  description,
-  compact = false,
-  children,
-}: {
-  compact?: boolean;
-  name: string;
-  value: string;
-  checked: boolean;
-  onSelect: () => void;
-  label: string;
-  description: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="relative grid cursor-pointer content-between gap-3 rounded-xl p-3 ring-1 ring-foreground/10 transition hover:ring-primary/50 has-checked:ring-2 has-checked:ring-primary has-focus-visible:outline-2 has-focus-visible:outline-ring">
-      <input type="radio" name={name} value={value} checked={checked} onChange={onSelect} className="sr-only" />
-      {checked && (
-        <span className="absolute top-2 right-2 z-10 flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-          <CheckIcon className="size-3.5" />
-        </span>
-      )}
-      <div className={`flex items-center justify-center rounded-lg bg-muted/50 ${compact ? "h-20 p-2 sm:h-36 sm:p-3" : "h-36 p-3"}`}>{children}</div>
-      <div>
-        <div className="text-sm font-medium">{label}</div>
-        <div className={`text-xs text-muted-foreground ${compact ? "hidden sm:block" : ""}`}>{description}</div>
-      </div>
-    </label>
   );
 }
 
@@ -109,31 +73,11 @@ export function BatchForm({ art }: { art: ArtData }) {
       </Step>
 
       <Step n={2} title="Estilo" error={errors.style?.[0]}>
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          {STYLES.map((s) => (
-            <Option key={s.id} compact name="style" value={s.id} checked={style === s.id} onSelect={() => setStyle(s.id)} label={s.label} description={s.description}>
-              <ArtPreview product="cartao" style={s.id} data={art} className="w-full max-w-44" />
-            </Option>
-          ))}
-        </div>
+        <StylePicker name="style" value={style} onChange={setStyle} art={art} />
       </Step>
 
       <Step n={3} title="Produto" hint={`no estilo ${getStyle(style).label.toLowerCase()}`} error={errors.product?.[0]}>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {PRODUCTS.map((p) => (
-            <Option key={p.id} name="product" value={p.id} checked={product === p.id} onSelect={() => setProduct(p.id)} label={p.label} description={p.description}>
-              {p.sides.length > 1 ? (
-                // Cartão: frente e verso lado a lado (o verso tem o QR Code único).
-                <div className={`flex h-full items-center justify-center gap-1.5 ${p.height > p.width ? "" : "flex-col"}`}>
-                  <ArtPreview product={p.id} style={style} side="front" data={art} className={p.height > p.width ? "h-full" : "h-[48%]"} />
-                  <ArtPreview product={p.id} style={style} side="back" data={art} className={p.height > p.width ? "h-full" : "h-[48%]"} />
-                </div>
-              ) : (
-                <ArtPreview product={p.id} style={style} data={art} className="h-full" />
-              )}
-            </Option>
-          ))}
-        </div>
+        <ProductPicker name="product" value={product} onChange={setProduct} style={style} art={art} />
       </Step>
 
       <Step n={4} title="Nome do lote" hint="opcional" error={errors.name?.[0]}>
