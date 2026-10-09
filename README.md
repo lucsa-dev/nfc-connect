@@ -79,9 +79,9 @@ Se `NEXT_PUBLIC_SITE_URL` não estiver definida, o sistema usa o domínio de pro
 
 ## Quiz de vendas (`/comecar`)
 
-1. Busca do negócio (Google Places Autocomplete + Place Details, chamados no servidor).
+1. Busca do negócio: com a Places API, autocomplete enquanto digita (Autocomplete + Place Details, no servidor). Sem ela e com `APIFY_TOKEN`, a pessoa digita nome e cidade e clica em **Buscar no Google** (scraper da Apify, de 15 a 60 s, até 3 resultados). Cada busca fica em cache por 7 dias (`maps_searches`) e há limite de 5 buscas por hora por visitante. Sem nenhuma das duas, cadastro manual.
 2. Como funciona, meta, onde o cliente paga, clientes por dia e pontos de atendimento.
-3. Plano: diagnóstico, prazo estimado e kit recomendado com preço e estilo da placa.
+3. Plano: diagnóstico, prazo estimado, kit recomendado com preço, e escolha visual do estilo e do modelo da placa e do cartão.
 4. Nome + WhatsApp: o pedido vira lead em `leads` e o cliente pode enviar o resumo pelo WhatsApp.
 
 O progresso é salvo a cada etapa (status `quiz`) e vira `lead` ao receber o WhatsApp. Kit, valor e prazo são recalculados no servidor. Preços em [`src/lib/pricing.ts`](src/lib/pricing.ts); regras da projeção em [`src/lib/quiz.ts`](src/lib/quiz.ts) (`PROJECTION`: 26 dias × 1% dos clientes avaliando, ajuste com dados reais).
