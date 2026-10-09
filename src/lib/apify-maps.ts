@@ -144,3 +144,33 @@ export function matchApifyItems(targets: MapsTarget[], items: ApifyPlaceItem[]):
   }
   return result;
 }
+
+// Busca do negócio no quiz ---------------------------------------------------------
+
+/** Até quantos negócios mostrar na busca do quiz. */
+export const SEARCH_RESULTS = 3;
+
+/** Normaliza o texto da busca para o cache ("Padaria  São João " -> "padaria sao joao"). */
+export function normalizeSearchQuery(input: string): string {
+  return input
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 200);
+}
+
+/** Entrada do Actor para achar o negócio: poucos resultados e sem avaliações (mais rápido e barato). */
+export function searchActorInput(query: string) {
+  return {
+    searchStringsArray: [query.trim().slice(0, 200)],
+    maxCrawledPlacesPerSearch: SEARCH_RESULTS,
+    language: "pt-BR",
+    countryCode: "br",
+    maxReviews: 0,
+    scrapePlaceDetailPage: false,
+    maxImages: 0,
+    scrapeContacts: false,
+  };
+}

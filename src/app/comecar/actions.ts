@@ -1,6 +1,10 @@
 "use server";
 
+import { headers } from "next/headers";
 import { z } from "zod";
+import { apifyEnabled, searchMapsSync } from "@/lib/apify";
+import { normalizeSearchQuery } from "@/lib/apify-maps";
+import type { Json } from "@/lib/database.types";
 import { normalizeCep, parseIbgeCities, parseViaCep, searchCities, type CepInfo, type City } from "@/lib/br-location";
 import { STYLES } from "@/lib/card";
 import {
@@ -14,6 +18,7 @@ import {
 } from "@/lib/places";
 import { CLIENT_BANDS, estimateTimeline, normalizeBrPhone, recommendKit, SPOTS } from "@/lib/quiz";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getClientIp, hashIp } from "@/lib/visit";
 
 const apiKey = () => process.env.GOOGLE_PLACES_API_KEY;
 
@@ -60,6 +65,69 @@ export async function getPlace(placeId: string, sessionToken: string): Promise<P
     console.error(error);
     return null;
   }
+}
+
+// Busca pelo scraper (Apify), sem a Places API ------------------------------------
+
+/** Buscas por visitante (IP) por hora: cada execução do scraper é cobrada. */
+const MAPS_SEARCH_LIMIT = 5;
+/** Resultado de uma busca reaproveitado por 7 dias. */
+const MAPS_CACHE_MS = 7 * 86_400_000;
+
+export type MapsSearchResult =
+  | { ok: true; places: PlaceInfo[] }
+  | { ok: false; reason: "indisponivel" | "limite" | "erro" };
+
+/** Só o que o quiz usa (o perfil completo fica para o painel). */
+function toPlaceInfo(p: PlaceInfo): PlaceInfo {
+  return {
+    placeId: p.placeId,
+    name: p.name,
+    address: p.address,
+    city: p.city,
+    state: p.state,
+    rating: p.rating,
+    reviews: p.reviews,
+    category: p.category,
+    mapsUrl: p.mapsUrl,
+    businessStatus: p.businessStatus,
+    lastReviewAt: p.lastReviewAt,
+  };
+}
+
+export async function searchMaps(input: string): Promise<MapsSearchResult> {
+  if (!apifyEnabled()) return { ok: false, reason: "indisponivel" };
+  const query = normalizeSearchQuery(input);
+  if (query.length < 3) return { ok: true, places: [] };
+
+  const supabase = createAdminClient();
+  const { data: cached } = await supabase
+    .from("maps_searches")
+    .select("results")
+    .eq("query", query)
+    .gte("created_at", new Date(Date.now() - MAPS_CACHE_MS).toISOString())
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (cached && Array.isArray(cached.results)) return { ok: true, places: (cached.results as unknown as PlaceInfo[]).map(toPlaceInfo) };
+
+  const ip = getClientIp(await headers());
+  const ipHash = ip ? await hashIp(ip, process.env.IP_HASH_SALT ?? "") : null;
+  if (ipHash) {
+    const { count } = await supabase
+      .from("maps_searches")
+      .select("id", { count: "exact", head: true })
+      .eq("ip_hash", ipHash)
+      .gte("created_at", new Date(Date.now() - 3_600_000).toISOString());
+    if ((count ?? 0) >= MAPS_SEARCH_LIMIT) return { ok: false, reason: "limite" };
+  }
+
+  const places = await searchMapsSync(input);
+  if (!places) return { ok: false, reason: "erro" };
+  const results = places.map(toPlaceInfo);
+  const { error } = await supabase.from("maps_searches").insert({ query, ip_hash: ipHash, results: results as unknown as Json });
+  if (error) console.error("Falha ao salvar busca do Maps", error);
+  return { ok: true, places: results };
 }
 
 // Cidade e CEP -------------------------------------------------------------------

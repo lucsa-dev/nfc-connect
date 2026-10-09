@@ -15,6 +15,10 @@ vi.mock("@/lib/supabase/admin", () => ({
   }),
 }));
 
+// Módulos só de servidor que o arquivo de actions importa (não usados no saveLead).
+vi.mock("@/lib/apify", () => ({ apifyEnabled: () => false, searchMapsSync: async () => null }));
+vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
+
 const { saveLead } = await import("@/app/comecar/actions");
 
 const base = {
@@ -61,6 +65,16 @@ describe("saveLead", () => {
       estimate: "3 a 4 meses",
       utm: { utm_source: "instagram" },
     });
+  });
+
+  it("guarda o modelo só do que está no kit (padrão para quizzes antigos)", async () => {
+    await saveLead({ ...base, plaqueModel: "placa-retangular", cardModel: "cartao-vertical" });
+    expect(db.upserts[0]).toMatchObject({ plaque_model: "placa-retangular", card_model: "cartao-vertical" });
+
+    await saveLead({ ...base, spots: ["balcao"], cardModel: "cartao-vertical" });
+    expect(db.upserts[1]).toMatchObject({ plaque_model: "placa-quadrada", card_model: null });
+
+    expect(await saveLead({ ...base, plaqueModel: "outra" as never })).toEqual({ ok: false, error: "Dados inválidos" });
   });
 
   it("vira lead ao receber o WhatsApp, normalizado", async () => {

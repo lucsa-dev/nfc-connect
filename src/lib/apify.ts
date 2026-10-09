@@ -1,5 +1,14 @@
 import "server-only";
-import { DEFAULT_MAPS_ACTOR, mapsActorInput, matchApifyItems, type ApifyPlaceItem, type MapsTarget } from "@/lib/apify-maps";
+import {
+  DEFAULT_MAPS_ACTOR,
+  mapsActorInput,
+  matchApifyItems,
+  parseApifyPlace,
+  SEARCH_RESULTS,
+  searchActorInput,
+  type ApifyPlaceItem,
+  type MapsTarget,
+} from "@/lib/apify-maps";
 import type { PlaceProfile } from "@/lib/places";
 
 /** Chamadas à API da Apify (o token nunca vai para o navegador). */
@@ -29,6 +38,29 @@ export async function scrapeMapsSync(targets: MapsTarget[]): Promise<Map<string,
   } catch (error) {
     console.error("Falha no scraper do Google Maps (Apify)", error);
     return new Map();
+  }
+}
+
+/** Busca negócios por texto ("Padaria Central Fortaleza"), para o quiz. Leva de 15 a 60 s. */
+export async function searchMapsSync(query: string): Promise<PlaceProfile[] | null> {
+  if (!apifyEnabled()) return null;
+  try {
+    const res = await fetch(`${API}/acts/${actor()}/run-sync-get-dataset-items?timeout=75&clean=true&format=json`, {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify(searchActorInput(query)),
+      cache: "no-store",
+      signal: AbortSignal.timeout(85_000),
+    });
+    if (!res.ok) throw new Error(`Apify ${res.status}: ${await res.text()}`);
+    const items = (await res.json()) as ApifyPlaceItem[];
+    return items
+      .map(parseApifyPlace)
+      .filter((p): p is PlaceProfile => p !== null)
+      .slice(0, SEARCH_RESULTS);
+  } catch (error) {
+    console.error("Falha na busca do Google Maps (Apify)", error);
+    return null;
   }
 }
 

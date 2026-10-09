@@ -2,7 +2,7 @@
 
 import { Loader2Icon, MapPinIcon, SearchIcon, StarIcon, TriangleAlertIcon } from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { findCities, getPlace, lookupCep, searchPlaces, warmCities } from "@/app/comecar/actions";
+import { findCities, getPlace, lookupCep, searchMaps, searchPlaces, warmCities } from "@/app/comecar/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -239,11 +239,131 @@ function ManualForm({
   );
 }
 
+const SEARCH_STEPS = ["Abrindo o Google Maps...", "Procurando o seu negócio...", "Lendo nota e avaliações...", "Quase lá..."];
+
+/**
+ * Busca pelo scraper do Google Maps (Apify), quando não há a Places API:
+ * não dá para sugerir enquanto digita (cada busca leva de 15 a 60 s),
+ * então a pessoa digita nome e cidade e clica em Buscar.
+ */
+function MapsSearch({ onPick, onManual }: { onPick: (place: PlaceInfo) => void; onManual: () => void }) {
+  const [text, setText] = useState("");
+  const [results, setResults] = useState<PlaceInfo[] | null>(null);
+  const [failure, setFailure] = useState<"limite" | "erro" | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+  const [searching, startSearch] = useTransition();
+
+  useEffect(() => {
+    if (!searching) return;
+    const timer = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(timer);
+  }, [searching]);
+
+  function search() {
+    if (text.trim().length < 3) return;
+    setResults(null);
+    setFailure(null);
+    setElapsed(0);
+    startSearch(async () => {
+      const result = await searchMaps(text);
+      if (result.ok) setResults(result.places);
+      else if (result.reason === "indisponivel") onManual();
+      else setFailure(result.reason);
+    });
+  }
+
+  if (searching) {
+    // Barra que avança rápido no início e desacelera (a busca leva de 15 a 60 s).
+    const progress = Math.min(95, Math.round(100 * (1 - Math.exp(-elapsed / 20))));
+    return (
+      <div className="grid gap-3 rounded-xl bg-card p-5 ring-1 ring-foreground/10" aria-live="polite">
+        <div className="flex items-center gap-3">
+          <Loader2Icon className="size-5 shrink-0 animate-spin text-primary motion-reduce:animate-none" />
+          <div className="min-w-0">
+            <p className="font-medium">{SEARCH_STEPS[Math.min(SEARCH_STEPS.length - 1, Math.floor(elapsed / 8))]}</p>
+            <p className="truncate text-sm text-muted-foreground">“{text.trim()}”</p>
+          </div>
+        </div>
+        <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+          <div className="h-full rounded-full bg-primary transition-[width] duration-1000" style={{ width: `${progress}%` }} />
+        </div>
+        <p className="text-xs text-muted-foreground">Buscando direto no Google Maps. Pode levar até 1 minuto ({elapsed}s).</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-3">
+      <form
+        className="grid gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          search();
+        }}
+      >
+        <div className="relative">
+          <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Ex.: Padaria Central Fortaleza"
+            className="h-12 pl-9 text-base"
+            autoComplete="off"
+            aria-label="Nome do negócio e cidade"
+            autoFocus
+            enterKeyHint="search"
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">Digite o nome e a cidade, como você procuraria no Google Maps.</p>
+        <Button type="submit" size="lg" className="h-11" disabled={text.trim().length < 3}>
+          <SearchIcon /> Buscar no Google
+        </Button>
+      </form>
+
+      {results && results.length > 0 && (
+        <div className="grid gap-2">
+          <p className="text-sm font-medium">É algum destes?</p>
+          <ul className="grid overflow-hidden rounded-xl ring-1 ring-foreground/10" aria-label="Negócios encontrados">
+            {results.map((p) => (
+              <li key={p.placeId ?? p.name} className="border-b last:border-b-0">
+                <button type="button" onClick={() => onPick(p)} className="grid w-full gap-1 px-4 py-3 text-left hover:bg-muted">
+                  <span className="font-medium">{p.name}</span>
+                  {p.placeId && <Rating place={p} />}
+                  {(p.address || p.city) && (
+                    <span className="flex items-start gap-1.5 text-sm text-muted-foreground">
+                      <MapPinIcon className="mt-0.5 size-3.5 shrink-0" />
+                      {p.address ?? p.city}
+                    </span>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className="text-[11px] text-muted-foreground">Resultados do Google Maps</p>
+        </div>
+      )}
+
+      {results && results.length === 0 && (
+        <p className="text-sm text-muted-foreground">Não encontramos nada com essa busca. Confira o nome e a cidade e tente de novo.</p>
+      )}
+      {failure === "limite" && (
+        <p className="text-sm text-muted-foreground">Você já fez muitas buscas agora. Tente de novo mais tarde ou cadastre manualmente.</p>
+      )}
+      {failure === "erro" && <p className="text-sm text-destructive">A busca no Google falhou. Tente de novo ou cadastre manualmente.</p>}
+
+      <button type="button" onClick={onManual} className="w-fit text-sm text-primary hover:underline">
+        {results || failure ? "Não encontrei: cadastrar manualmente" : "Prefiro digitar os dados manualmente"}
+      </button>
+    </div>
+  );
+}
+
 export function BusinessSearch({
   value,
   sessionToken,
   placesEnabled,
   allowManual = true,
+  mapsSearch = false,
   onChange,
 }: {
   value: PlaceInfo | null;
@@ -252,6 +372,8 @@ export function BusinessSearch({
   placesEnabled: boolean;
   /** false: só aceita negócios do Google (ex.: ativação do cartão, que precisa do Place ID). */
   allowManual?: boolean;
+  /** Sem a Places API, busca pelo scraper do Google Maps (botão Buscar). */
+  mapsSearch?: boolean;
   onChange: (place: PlaceInfo | null) => void;
 }) {
   const [query, setQuery] = useState("");
@@ -322,6 +444,21 @@ export function BusinessSearch({
     onChange(place);
   };
 
+  if (unavailable && mapsSearch && !manual) {
+    return (
+      <div className="grid gap-3">
+        {keepCurrent}
+        <MapsSearch
+          onPick={(place) => {
+            setEditing(false);
+            onChange(place);
+          }}
+          onManual={() => setManual(true)}
+        />
+      </div>
+    );
+  }
+
   if (!allowManual && unavailable) {
     return (
       <p className="flex items-center gap-2 rounded-xl bg-muted p-4 text-sm">
@@ -341,7 +478,7 @@ export function BusinessSearch({
             city: fromValue?.city && fromValue.state ? { name: fromValue.city, uf: fromValue.state } : null,
           }}
           onSubmit={submitManual}
-          onCancel={unavailable ? undefined : () => setManual(false)}
+          onCancel={unavailable && !mapsSearch ? undefined : () => setManual(false)}
         />
         {keepCurrent}
       </div>

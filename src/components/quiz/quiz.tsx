@@ -52,6 +52,8 @@ interface StepProps {
   /** WhatsApp da TopTap (configurado no painel) */
   whatsapp: string | null;
   placesEnabled: boolean;
+  /** Sem a Places API, busca o negócio pelo scraper (Apify). */
+  mapsSearch: boolean;
 }
 
 const businessName = (s: QuizState) => s.business?.name ?? "seu negócio";
@@ -147,12 +149,12 @@ function Stepper({ label, value, onChange, max }: { label: string; value: number
 
 // Telas ----------------------------------------------------------------------------
 
-function StepBusiness({ state, dispatch, placesEnabled }: StepProps) {
+function StepBusiness({ state, dispatch, placesEnabled, mapsSearch }: StepProps) {
   return (
     <>
       <Title>Vamos preparar a sua placa TopTap</Title>
       <Lead>
-        {placesEnabled
+        {placesEnabled || mapsSearch
           ? "Qual é o nome do seu negócio no Google? Busque como ele aparece no Google Maps."
           : "Conte qual é o seu negócio e em que cidade ele fica."}
       </Lead>
@@ -161,6 +163,7 @@ function StepBusiness({ state, dispatch, placesEnabled }: StepProps) {
           value={state.business}
           sessionToken={state.placesToken}
           placesEnabled={placesEnabled}
+          mapsSearch={mapsSearch}
           onChange={(business) => dispatch({ type: "business", business })}
         />
       </div>
@@ -482,7 +485,17 @@ const NEXT_LABEL: Partial<Record<StepKey, string>> = {
 
 // Quiz -----------------------------------------------------------------------------
 
-export function Quiz({ art, whatsapp, placesEnabled }: { art: ArtData; whatsapp: string | null; placesEnabled: boolean }) {
+export function Quiz({
+  art,
+  whatsapp,
+  placesEnabled,
+  mapsSearch,
+}: {
+  art: ArtData;
+  whatsapp: string | null;
+  placesEnabled: boolean;
+  mapsSearch: boolean;
+}) {
   const [state, dispatch] = useReducer(reducer, undefined, () => loadState(window.location.search));
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -545,7 +558,7 @@ export function Quiz({ art, whatsapp, placesEnabled }: { art: ArtData; whatsapp:
       </header>
 
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pt-6 pb-32">
-        <Step state={state} dispatch={dispatch} art={art} whatsapp={whatsapp} placesEnabled={placesEnabled} error={error} />
+        <Step state={state} dispatch={dispatch} art={art} whatsapp={whatsapp} placesEnabled={placesEnabled} mapsSearch={mapsSearch} error={error} />
       </main>
 
       {showNav && (

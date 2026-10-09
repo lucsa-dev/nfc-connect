@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapsActorInput, matchApifyItems, namesMatch, parseApifyPlace, searchStringFor, type ApifyPlaceItem } from "@/lib/apify-maps";
+import { mapsActorInput, matchApifyItems, namesMatch, normalizeSearchQuery, parseApifyPlace, searchActorInput, searchStringFor, type ApifyPlaceItem } from "@/lib/apify-maps";
 import { profileChecks } from "@/lib/google-score";
 
 const item: ApifyPlaceItem = {
@@ -108,5 +108,21 @@ describe("namesMatch e searchStringFor", () => {
   it("prefere o Place ID", () => {
     expect(searchStringFor({ name: "X", placeId: "ChIJ1", query: "X, Y" })).toBe("place_id:ChIJ1");
     expect(searchStringFor({ name: "X", placeId: null, query: " X, Y " })).toBe("X, Y");
+  });
+});
+
+describe("busca do quiz", () => {
+  it("normaliza o texto para o cache", () => {
+    expect(normalizeSearchQuery("  Padaria  São João\tFortaleza ")).toBe("padaria sao joao fortaleza");
+    expect(normalizeSearchQuery("x".repeat(300))).toHaveLength(200);
+  });
+
+  it("pede poucos resultados e nenhuma avaliação", () => {
+    expect(searchActorInput(" Padaria Central Fortaleza ")).toMatchObject({
+      searchStringsArray: ["Padaria Central Fortaleza"],
+      maxCrawledPlacesPerSearch: 3,
+      maxReviews: 0,
+      language: "pt-BR",
+    });
   });
 });
