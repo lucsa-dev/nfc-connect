@@ -6,14 +6,19 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getProduct, getStyle } from "@/lib/card";
+import { CARD_COPY, displayUrl, getProduct, getStyle, qrPath } from "@/lib/card";
+import { buildCardUrl } from "@/lib/cards";
 import { listBatches } from "@/lib/data";
 import { formatDateTime, formatNumber } from "@/lib/format";
+import { getSiteUrl } from "@/lib/urls";
 
 export const metadata: Metadata = { title: "Cartões em branco" };
 
 export default async function BatchesPage() {
   const batches = await listBatches();
+  // Prévia: arte de avaliação com um QR Code de exemplo.
+  const sample = buildCardUrl(getSiteUrl(), "exemplo2", "qr");
+  const art = { businessName: null, copy: CARD_COPY.review, qr: qrPath(sample), url: displayUrl(sample) };
 
   return (
     <>
@@ -24,7 +29,7 @@ export default async function BatchesPage() {
 
       <Card className="mb-6">
         <CardContent>
-          <BatchForm />
+          <BatchForm art={art} />
         </CardContent>
       </Card>
 
