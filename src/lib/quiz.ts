@@ -31,7 +31,13 @@ export interface QuizAnswers {
   /** Mesas ou atendentes (cartões) */
   tables: number;
   style: StyleId;
+  /** Modelo das placas e dos cartões do kit. */
+  plaqueModel: PlaqueModel;
+  cardModel: CardModel;
 }
+
+export type PlaqueModel = "placa-quadrada" | "placa-retangular";
+export type CardModel = "cartao" | "cartao-vertical";
 
 // Meta -------------------------------------------------------------------------
 
@@ -172,12 +178,15 @@ export function whatsappSummary(params: {
   business: PlaceInfo | null;
   kit: Kit;
   styleLabel: string;
+  /** Ex.: "placa 10 × 10 cm, cartão horizontal" */
+  models?: string;
   goal: number | null;
 }): string {
   const lines = [
     `Olá! Sou ${params.name.trim()} e quero a placa TopTap.`,
     params.business ? `Negócio: ${params.business.name}${params.business.city ? ` (${params.business.city})` : ""}` : null,
     `Pedido: ${describeKit(params.kit)} · estilo ${params.styleLabel}`,
+    params.models ? `Modelo: ${params.models}` : null,
     `Valor: ${kitPriceLabel(params.kit)}`,
     params.goal ? `Meta: ${params.goal} avaliações no Google` : null,
   ];

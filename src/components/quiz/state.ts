@@ -1,6 +1,6 @@
 import type { StyleId } from "@/lib/card";
 import type { PlaceInfo } from "@/lib/places";
-import { goalOptions, normalizeBrPhone, type ClientBandId, type QuizAnswers, type SpotId } from "@/lib/quiz";
+import { goalOptions, normalizeBrPhone, type CardModel, type ClientBandId, type PlaqueModel, type QuizAnswers, type SpotId } from "@/lib/quiz";
 
 export const STEPS = [
   "negocio",
@@ -46,6 +46,8 @@ export type Action =
   | { type: "counters"; value: number }
   | { type: "tables"; value: number }
   | { type: "style"; style: StyleId }
+  | { type: "plaqueModel"; model: PlaqueModel }
+  | { type: "cardModel"; model: CardModel }
   | { type: "contact"; contact: Partial<QuizState["contact"]> }
   | { type: "reset" };
 
@@ -72,6 +74,8 @@ export function initialState(search = ""): QuizState {
     counters: 1,
     tables: 4,
     style: "classico",
+    plaqueModel: "placa-quadrada",
+    cardModel: "cartao",
     contact: { name: "", whatsapp: "", consent: false },
     utm,
   };
@@ -144,6 +148,10 @@ export function reducer(state: QuizState, action: Action): QuizState {
       return { ...state, tables: Math.min(200, Math.max(1, action.value)) };
     case "style":
       return { ...state, style: action.style };
+    case "plaqueModel":
+      return { ...state, plaqueModel: action.model };
+    case "cardModel":
+      return { ...state, cardModel: action.model };
     case "contact":
       return { ...state, contact: { ...state.contact, ...action.contact } };
     case "reset":

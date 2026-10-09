@@ -136,6 +136,9 @@ const leadSchema = z.object({
   counters: z.number().int().min(0).max(100),
   tables: z.number().int().min(0).max(500),
   style: z.enum(STYLES.map((s) => s.id) as [string, ...string[]]),
+  // Quizzes salvos antes desta opção não têm o modelo: usa o padrão.
+  plaqueModel: z.enum(["placa-quadrada", "placa-retangular"]).default("placa-quadrada"),
+  cardModel: z.enum(["cartao", "cartao-vertical"]).default("cartao"),
   contact: z
     .object({
       name: z.string().trim().max(120),
@@ -190,6 +193,9 @@ export async function saveLead(payload: LeadPayload): Promise<{ ok: boolean; err
     counters: data.counters,
     tables: data.tables,
     style: data.style,
+    // Modelo só faz sentido para o que está no kit.
+    plaque_model: kit.plaques ? data.plaqueModel : null,
+    card_model: kit.cards ? data.cardModel : null,
     plaques: kit.plaques,
     cards: kit.cards,
     total_cents: kit.totalCents,

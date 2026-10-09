@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getStyle } from "@/lib/card";
+import { getProduct, getStyle } from "@/lib/card";
 import { getLead } from "@/lib/data";
 import { formatDateTime } from "@/lib/format";
 import { LEAD_STATUS_LABEL } from "@/lib/leads";
@@ -76,6 +76,12 @@ export default async function LeadPage({ params }: PageProps<"/dashboard/pedidos
               </Row>
               <Row label="Valor (placas)">{lead.total_cents ? formatBRL(lead.total_cents) : null}</Row>
               <Row label="Estilo">{lead.style ? getStyle(lead.style).label : null}</Row>
+              <Row label="Modelo">
+                {[lead.plaque_model, lead.card_model]
+                  .filter((m): m is string => Boolean(m))
+                  .map((m) => getProduct(m).label)
+                  .join(" + ") || null}
+              </Row>
               <Row label="Onde usar">
                 {lead.spots.length ? lead.spots.map((s) => SPOTS.find((x) => x.id === s)?.label ?? s).join(", ") : null}
               </Row>

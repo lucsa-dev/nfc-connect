@@ -15,14 +15,15 @@ import Link from "next/link";
 import { useEffect, useReducer, useState, useTransition } from "react";
 import { saveLead, type LeadPayload } from "@/app/comecar/actions";
 import { Logo } from "@/components/brand/logo";
-import { ArtPreview, type ArtData } from "@/components/cards/print-art";
+import { ProductArt, ProductPicker, StylePicker } from "@/components/cards/piece-picker";
+import type { ArtData } from "@/components/cards/print-art";
 import { BusinessSearch } from "@/components/quiz/business-search";
 import { StepMenu } from "@/components/quiz/step-menu";
 import { canAdvance, loadState, persist, reducer, STEPS, STORAGE_KEY, type QuizState, type StepKey } from "@/components/quiz/state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getStyle, STYLES } from "@/lib/card";
+import { getProduct, getStyle } from "@/lib/card";
 import {
   CLIENT_BANDS,
   describeKit,
@@ -37,6 +38,8 @@ import {
   recommendKit,
   SPOTS,
   whatsappSummary,
+  type CardModel,
+  type PlaqueModel,
   type Tone,
 } from "@/lib/quiz";
 import { contactHref, whatsappHref } from "@/lib/site-config";
@@ -64,6 +67,8 @@ function toPayload(state: QuizState, includeContact = false): LeadPayload {
     counters: state.counters,
     tables: state.tables,
     style: state.style,
+    plaqueModel: state.plaqueModel,
+    cardModel: state.cardModel,
     contact: includeContact ? state.contact : null,
     utm: state.utm,
   };
@@ -317,22 +322,33 @@ function StepPlan({ state, dispatch, art }: StepProps) {
         <p className="mt-0.5 text-lg font-semibold text-primary">{kitPriceLabel(kit)}</p>
         <p className="text-xs text-muted-foreground">Pagamento único, sem mensalidade.</p>
 
-        <p className="mt-4 mb-2 text-sm font-medium">Estilo da placa</p>
-        <div className="grid grid-cols-3 gap-3" role="radiogroup" aria-label="Estilo da placa">
-          {STYLES.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              role="radio"
-              aria-checked={state.style === s.id}
-              onClick={() => dispatch({ type: "style", style: s.id })}
-              className={`grid gap-1.5 rounded-xl p-2 text-sm ring-1 transition ${state.style === s.id ? "ring-2 ring-primary" : "ring-foreground/15"}`}
-            >
-              <ArtPreview product="placa-quadrada" style={s.id} data={art} />
-              {s.label}
-            </button>
-          ))}
-        </div>
+        <p className="mt-5 mb-2 text-sm font-medium">Escolha o estilo</p>
+        <StylePicker value={state.style} onChange={(style) => dispatch({ type: "style", style })} art={art} />
+
+        {kit.plaques > 0 && (
+          <>
+            <p className="mt-5 mb-2 text-sm font-medium">Modelo da placa</p>
+            <ProductPicker
+              kind="plaque"
+              value={state.plaqueModel}
+              onChange={(model) => dispatch({ type: "plaqueModel", model: model as PlaqueModel })}
+              style={state.style}
+              art={art}
+            />
+          </>
+        )}
+        {kit.cards > 0 && (
+          <>
+            <p className="mt-5 mb-2 text-sm font-medium">Modelo do cartão</p>
+            <ProductPicker
+              kind="card"
+              value={state.cardModel}
+              onChange={(model) => dispatch({ type: "cardModel", model: model as CardModel })}
+              style={state.style}
+              art={art}
+            />
+          </>
+        )}
       </div>
     </>
   );
@@ -386,10 +402,25 @@ function StepContact({ state, dispatch }: StepProps & { error: string | null }) 
   );
 }
 
+/** Modelos do kit (placa e/ou cartão), na ordem de exibição. */
+function kitModels(state: QuizState, kit: ReturnType<typeof recommendKit>) {
+  return [kit.plaques ? getProduct(state.plaqueModel) : null, kit.cards ? getProduct(state.cardModel) : null].filter(
+    (p): p is ReturnType<typeof getProduct> => p !== null,
+  );
+}
+
 function StepDone({ state, dispatch, art, whatsapp }: StepProps) {
   const kit = recommendKit(state);
   const style = getStyle(state.style);
-  const message = whatsappSummary({ name: state.contact.name, business: state.business, kit, styleLabel: style.label, goal: state.goal });
+  const models = kitModels(state, kit);
+  const message = whatsappSummary({
+    name: state.contact.name,
+    business: state.business,
+    kit,
+    styleLabel: style.label,
+    models: models.map((m) => m.label.toLowerCase()).join(", "),
+    goal: state.goal,
+  });
   const href = whatsapp ? whatsappHref(whatsapp, message) : contactHref(message);
   const firstName = state.contact.name.trim().split(/\s+/)[0];
 
@@ -401,7 +432,11 @@ function StepDone({ state, dispatch, art, whatsapp }: StepProps) {
         Recebemos o pedido da {businessName(state)}: {describeKit(kit)}, estilo {style.label.toLowerCase()}.
         {href ? " Envie a mensagem abaixo para agilizar o atendimento." : " Vamos te chamar no WhatsApp em breve."}
       </Lead>
-      <ArtPreview product="placa-quadrada" style={state.style} data={art} className="mx-auto my-6 w-full max-w-[13rem]" />
+      <div className="mx-auto my-6 flex h-44 items-center justify-center gap-4">
+        {models.map((m) => (
+          <ProductArt key={m.id} product={m} style={state.style} art={art} />
+        ))}
+      </div>
       {href && (
         <a
           href={href}
