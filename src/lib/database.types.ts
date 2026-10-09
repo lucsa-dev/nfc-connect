@@ -132,6 +132,7 @@ export type Database = {
       leads: {
         Row: {
           business_id: string | null
+          card_model: string | null
           cards: number | null
           clients_band: string | null
           contact_name: string | null
@@ -152,6 +153,7 @@ export type Database = {
           place_rating: number | null
           place_reviews: number | null
           place_state: string | null
+          plaque_model: string | null
           plaques: number | null
           session_id: string
           spots: string[]
@@ -166,6 +168,7 @@ export type Database = {
         }
         Insert: {
           business_id?: string | null
+          card_model?: string | null
           cards?: number | null
           clients_band?: string | null
           contact_name?: string | null
@@ -186,6 +189,7 @@ export type Database = {
           place_rating?: number | null
           place_reviews?: number | null
           place_state?: string | null
+          plaque_model?: string | null
           plaques?: number | null
           session_id: string
           spots?: string[]
@@ -200,6 +204,7 @@ export type Database = {
         }
         Update: {
           business_id?: string | null
+          card_model?: string | null
           cards?: number | null
           clients_band?: string | null
           contact_name?: string | null
@@ -220,6 +225,7 @@ export type Database = {
           place_rating?: number | null
           place_reviews?: number | null
           place_state?: string | null
+          plaque_model?: string | null
           plaques?: number | null
           session_id?: string
           spots?: string[]
