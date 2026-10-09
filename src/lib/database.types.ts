@@ -397,6 +397,30 @@ export type Database = {
           },
         ]
       }
+      maps_searches: {
+        Row: {
+          created_at: string
+          id: number
+          ip_hash: string | null
+          query: string
+          results: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          ip_hash?: string | null
+          query: string
+          results?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          ip_hash?: string | null
+          query?: string
+          results?: Json
+        }
+        Relationships: []
+      }
       place_snapshots: {
         Row: {
           analysis: Json | null
