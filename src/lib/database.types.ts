@@ -20,8 +20,10 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          maps_query: string | null
           name: string
           owner_id: string
+          place_id: string | null
           slug: string
           updated_at: string
         }
@@ -29,8 +31,10 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          maps_query?: string | null
           name: string
           owner_id?: string
+          place_id?: string | null
           slug: string
           updated_at?: string
         }
@@ -38,12 +42,92 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          maps_query?: string | null
           name?: string
           owner_id?: string
+          place_id?: string | null
           slug?: string
           updated_at?: string
         }
         Relationships: []
+      }
+      card_batches: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          product: string
+          quantity: number
+          style: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          owner_id?: string
+          product: string
+          quantity: number
+          style: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+          product?: string
+          quantity?: number
+          style?: string
+        }
+        Relationships: []
+      }
+      cards: {
+        Row: {
+          activated_at: string | null
+          batch_id: string
+          code: string
+          created_at: string
+          id: string
+          link_id: string | null
+          owner_id: string
+          position: number
+        }
+        Insert: {
+          activated_at?: string | null
+          batch_id: string
+          code: string
+          created_at?: string
+          id?: string
+          link_id?: string | null
+          owner_id?: string
+          position: number
+        }
+        Update: {
+          activated_at?: string | null
+          batch_id?: string
+          code?: string
+          created_at?: string
+          id?: string
+          link_id?: string | null
+          owner_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cards_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "card_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cards_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: true
+            referencedRelation: "links"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       leads: {
         Row: {
@@ -300,6 +384,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "links_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      place_snapshots: {
+        Row: {
+          analysis: Json | null
+          analyzed_at: string | null
+          business_id: string
+          created_at: string
+          id: number
+          place_id: string
+          profile: Json
+          rating: number | null
+          reviews: number | null
+        }
+        Insert: {
+          analysis?: Json | null
+          analyzed_at?: string | null
+          business_id: string
+          created_at?: string
+          id?: never
+          place_id: string
+          profile?: Json
+          rating?: number | null
+          reviews?: number | null
+        }
+        Update: {
+          analysis?: Json | null
+          analyzed_at?: string | null
+          business_id?: string
+          created_at?: string
+          id?: never
+          place_id?: string
+          profile?: Json
+          rating?: number | null
+          reviews?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "place_snapshots_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
