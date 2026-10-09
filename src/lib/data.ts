@@ -114,3 +114,32 @@ export async function getLead(leadId: string) {
   if (!data) notFound();
   return data;
 }
+
+// Lotes de peças em branco ------------------------------------------------------
+
+export async function listBatches() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("card_batches")
+    .select("id, name, product, style, quantity, created_at, cards(link_id)")
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error) throw error;
+  return data.map(({ cards, ...batch }) => ({
+    ...batch,
+    activated: cards.filter((c) => c.link_id).length,
+  }));
+}
+
+export async function getBatch(batchId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("card_batches")
+    .select("*, cards(id, code, position, activated_at, link_id, link:links(id, click_count, business:businesses(id, name)))")
+    .eq("id", batchId)
+    .order("position", { referencedTable: "cards", ascending: true })
+    .maybeSingle();
+  if (error && error.code !== "22P02") throw error;
+  if (!data) notFound();
+  return data;
+}

@@ -25,6 +25,9 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
             <Link href="/dashboard/pedidos" className="rounded-md px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground">
               Pedidos
             </Link>
+            <Link href="/dashboard/cartoes" className="rounded-md px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground">
+              Cartões
+            </Link>
             <Link
               href="/dashboard/configuracoes"
               className="flex items-center gap-1 rounded-md px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground"
