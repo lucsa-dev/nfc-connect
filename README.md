@@ -29,6 +29,10 @@ Cada link ganha um endereço público `https://seu-dominio.com.br/{negocio}/{lin
 - Robôs de pré-visualização (WhatsApp, Instagram, Google...) ficam registrados mas não entram no contador.
 - Landing page de vendas na home e modelos de cartão prontos para impressão (gráfica ou folha A4).
 - Quiz de vendas em `/comecar`: busca o negócio no Google, mostra diagnóstico, meta, prazo estimado e kit recomendado, e captura o contato. Os pedidos aparecem em **Painel → Pedidos**, onde um clique cria o negócio e o link de avaliação.
+- **Cartões em branco** (Painel → Cartões): gera lotes de cartões ou placas com código único (`/c/{codigo}`), PDF de impressão com o QR de cada peça (gráfica: frente e verso em sequência; ou folhas A4) e CSV com os links para gravar nos chips NFC.
+- **Ativação**: a primeira pessoa que abrir uma peça em branco busca o negócio no Google. O sistema cria o negócio (ou reaproveita o mesmo Place ID), um link de avaliação só daquela peça, coleta os dados do Google Maps e gera a análise do perfil com IA.
+- **Google Maps** na página do negócio: nota, avaliações, checklist do perfil, análise da IA (OpenAI) com melhorias e uma mensagem para oferecer o serviço de otimização.
+- **Evolução** (Painel → Evolução): avaliações novas em 7 e 30 dias e desde o início de todos os clientes, atualizadas por um cron semanal.
 - Tema claro (padrão) e escuro.
 
 ## Rodando localmente
@@ -57,8 +61,13 @@ npm run dev
 | `SUPABASE_SECRET_KEY` | Chave secreta (`sb_secret_...`) ou a antiga `service_role`. Usada **só no servidor**, nas rotas públicas de redirecionamento e Pix |
 | `NEXT_PUBLIC_SITE_URL` | Domínio usado nos links das TAGs e QR Codes (ex.: `https://cartoes.com.br`) |
 | `IP_HASH_SALT` | Texto aleatório para anonimizar IPs (`openssl rand -hex 32`) |
-| `GOOGLE_PLACES_API_KEY` | Chave da Google Places API (New), só no servidor. Sem ela, o quiz pede nome e cidade manualmente |
+| `GOOGLE_PLACES_API_KEY` | Opcional. Google Places API (New): busca do negócio no quiz e na ativação. Sem ela, os formulários pedem nome e cidade |
+| `APIFY_TOKEN` | Token da Apify. Fonte das métricas do Google Maps (painel, Evolução, cron) via scraper |
+| `APIFY_MAPS_ACTOR` | Opcional. Actor do scraper (padrão `compass~crawler-google-places`) |
 | `NEXT_PUBLIC_WHATSAPP_NUMBER` | WhatsApp da TopTap (55 + DDD + número), usado no fim do quiz |
+| `OPENAI_API_KEY` | Chave da OpenAI para a análise do perfil no Google. Sem ela, o painel mostra só o checklist |
+| `OPENAI_MODEL` | Opcional. Modelo da análise (padrão `gpt-5-mini`) |
+| `CRON_SECRET` | Segredo do cron semanal `/api/cron/google` (a Vercel envia no cabeçalho `Authorization`) e do webhook da Apify |
 
 ## Deploy na Vercel
 
@@ -76,6 +85,35 @@ Se `NEXT_PUBLIC_SITE_URL` não estiver definida, o sistema usa o domínio de pro
 4. Nome + WhatsApp: o pedido vira lead em `leads` e o cliente pode enviar o resumo pelo WhatsApp.
 
 O progresso é salvo a cada etapa (status `quiz`) e vira `lead` ao receber o WhatsApp. Kit, valor e prazo são recalculados no servidor. Preços em [`src/lib/pricing.ts`](src/lib/pricing.ts); regras da projeção em [`src/lib/quiz.ts`](src/lib/quiz.ts) (`PROJECTION`: 26 dias × 1% dos clientes avaliando, ajuste com dados reais).
+
+## Cartões em branco e ativação
+
+```
+Painel → Cartões → Gerar lote (ex.: 50 cartões)
+   → Imprimir (PDF com QR único por peça)  → gráfica
+   → Links (CSV)                            → gravar cada chip NFC na ordem
+
+Cliente abre a peça (/c/k7m2p9qa)
+   ├─ em branco → /c/k7m2p9qa/ativar → busca no Google → cria negócio + link de avaliação
+   │                                    → coleta do Google Maps + análise da IA (after())
+   └─ ativada   → conta o acesso e redireciona para a avaliação (igual aos links normais)
+```
+
+- Qualquer pessoa com a peça em mãos pode ativá-la. Sem a Places API, informa nome, cidade e o link de avaliação do Google (`g.page/r/.../review`). Se o mesmo link (ou Place ID) já existir, a peça entra no mesmo negócio com o próprio link.
+- Excluir o negócio libera as peças dele para uma nova ativação.
+
+## Métricas do Google Maps (Apify)
+
+O [Google Maps Scraper](https://apify.com/compass/crawler-google-places) da Apify busca cada negócio (por Place ID ou por "Nome, Cidade - UF") e traz nota, avaliações, distribuição de estrelas, total de fotos, horário, contato e as 20 avaliações mais recentes (com a resposta do dono).
+
+```
+Ativação / "Atualizar dados"  → execução síncrona (até ~4 min) → place_snapshots (+ place_id no negócio)
+Cron semanal (segunda, 6h)    → 1 execução com todos os clientes → Apify chama /api/apify/webhook → place_snapshots
+```
+
+- A busca por nome só é aceita se o nome encontrado tiver uma palavra em comum com o cadastrado. Se achar o negócio errado, use **Desvincular** no painel e ajuste o texto da busca.
+- O cron pula negócios coletados nos últimos 5 dias; o webhook ignora reenvios.
+- Custo aproximado: US$ 1,50 por mil negócios + US$ 0,0005 por avaliação (veja o preço atual na página do Actor).
 
 ## Como funciona o redirecionamento
 
