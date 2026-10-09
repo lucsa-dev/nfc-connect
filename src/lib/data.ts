@@ -143,3 +143,50 @@ export async function getBatch(batchId: string) {
   if (!data) notFound();
   return data;
 }
+
+// Google Maps ---------------------------------------------------------------------
+
+/** Coletas do Google de um negócio, mais recentes primeiro. */
+export async function getPlaceSnapshots(businessId: string, limit = 60) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("place_snapshots")
+    .select("id, created_at, rating, reviews, profile, analysis, analyzed_at")
+    .eq("business_id", businessId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data;
+}
+
+/** Nota e avaliações de todos os negócios nos últimos `days` dias (paginado). */
+export async function listSnapshotPoints(days = 365, limit = 20000) {
+  const since = new Date(Date.now() - days * 86_400_000);
+  const supabase = await createClient();
+  const rows = [];
+  for (let from = 0; from < limit; from += PAGE_SIZE) {
+    const to = Math.min(from + PAGE_SIZE, limit) - 1;
+    const { data, error } = await supabase
+      .from("place_snapshots")
+      .select("business_id, created_at, rating, reviews")
+      .gte("created_at", since.toISOString())
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, to);
+    if (error) throw error;
+    rows.push(...data);
+    if (data.length < to - from + 1) break;
+  }
+  return rows;
+}
+
+export async function listGoogleBusinesses() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("businesses")
+    .select("id, name, place_id, created_at")
+    .not("place_id", "is", null)
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return data;
+}

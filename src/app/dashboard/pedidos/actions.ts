@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { ActionState } from "@/lib/action-state";
-import { businessSlugCandidates, leadDescription } from "@/lib/leads";
+import { businessSlugCandidates, leadDescription, mapsQueryOf } from "@/lib/leads";
 import { reviewUrl } from "@/lib/places";
 import { createClient } from "@/lib/supabase/server";
 
@@ -27,11 +27,28 @@ export async function convertLead(leadId: string): Promise<ActionState> {
   const name = (lead.place_name || lead.contact_name || "").trim();
   if (name.length < 2) return { message: "O pedido não tem o nome do negócio." };
 
+  // Já existe um negócio com o mesmo lugar do Google (ex.: ativado por um cartão)?
+  if (lead.place_id) {
+    const { data: existing } = await supabase.from("businesses").select("id").eq("place_id", lead.place_id).maybeSingle();
+    if (existing) {
+      await supabase.from("leads").update({ status: "convertido", business_id: existing.id }).eq("id", leadId);
+      revalidatePath("/dashboard", "layout");
+      redirect(`/dashboard/${existing.id}`);
+    }
+  }
+
   let businessId: string | null = null;
   for (const slug of businessSlugCandidates(name, lead.place_city)) {
     const { data, error } = await supabase
       .from("businesses")
-      .insert({ name: name.slice(0, 120), slug, description: leadDescription(lead) || null })
+      .insert({
+        name: name.slice(0, 120),
+        slug,
+        place_id: lead.place_id,
+        // Sem Place ID, o scraper acha o negócio por nome e cidade.
+        maps_query: lead.place_id ? null : mapsQueryOf(name, lead.place_city, lead.place_state),
+        description: leadDescription(lead) || null,
+      })
       .select("id")
       .single();
     if (!error) {

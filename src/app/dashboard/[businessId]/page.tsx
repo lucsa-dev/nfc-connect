@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChevronRightIcon, LinkIcon } from "lucide-react";
 import { BusinessFormDialog } from "@/components/dashboard/business-form-dialog";
 import { ConfirmDelete } from "@/components/dashboard/confirm-delete";
+import { GooglePanel } from "@/components/dashboard/google-panel";
 import { CopyButton } from "@/components/dashboard/copy-button";
 import { LinkFormDialog } from "@/components/dashboard/link-form-dialog";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -18,11 +19,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getBusinessWithLinks } from "@/lib/data";
+import { getBusinessWithLinks, getPlaceSnapshots } from "@/lib/data";
+import { analysisEnabled, metricsEnabled, placesEnabled } from "@/lib/google";
 import { formatNumber } from "@/lib/format";
 import { LINK_TYPE_INFO } from "@/lib/link-types";
 import { buildPublicLinkUrl, getSiteUrl } from "@/lib/urls";
 import { createLink, deleteBusiness, updateBusiness } from "../actions";
+
+// Server Actions desta página: busca no Maps (scraper, até ~4 min) e análise da IA.
+export const maxDuration = 300;
 
 export async function generateMetadata({ params }: PageProps<"/dashboard/[businessId]">): Promise<Metadata> {
   const { businessId } = await params;
@@ -32,7 +37,7 @@ export async function generateMetadata({ params }: PageProps<"/dashboard/[busine
 
 export default async function BusinessPage({ params }: PageProps<"/dashboard/[businessId]">) {
   const { businessId } = await params;
-  const business = await getBusinessWithLinks(businessId);
+  const [business, snapshots] = await Promise.all([getBusinessWithLinks(businessId), getPlaceSnapshots(businessId)]);
   const siteUrl = getSiteUrl();
   const host = siteUrl.replace(/^https?:\/\//, "");
 
@@ -61,6 +66,14 @@ export default async function BusinessPage({ params }: PageProps<"/dashboard/[bu
             />
           </>
         }
+      />
+
+      <GooglePanel
+        business={business}
+        snapshots={snapshots}
+        placesEnabled={placesEnabled()}
+        metricsEnabled={metricsEnabled()}
+        analysisEnabled={analysisEnabled()}
       />
 
       <div className="mb-3 flex items-center justify-between">
