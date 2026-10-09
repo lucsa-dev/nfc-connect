@@ -115,3 +115,148 @@ export function parsePlaceDetails(json: DetailsResponse): PlaceInfo {
 export function reviewUrl(placeId: string): string {
   return `https://search.google.com/local/writereview?placeid=${encodeURIComponent(placeId)}`;
 }
+
+// Perfil completo (ativação, painel e cron) ----------------------------------------
+
+/** Campos para avaliar o perfil: tudo do Place Details mais contato, horário e fotos. */
+export const PROFILE_FIELDS = [
+  DETAILS_FIELDS,
+  "types",
+  "primaryType",
+  "websiteUri",
+  "nationalPhoneNumber",
+  "regularOpeningHours.weekdayDescriptions",
+  "photos",
+  "editorialSummary",
+  "priceLevel",
+].join(",");
+
+export interface PlaceReview {
+  rating: number | null;
+  text: string | null;
+  publishTime: string | null;
+  /** O dono respondeu? (só o scraper informa) */
+  ownerReplied?: boolean;
+}
+
+export interface PlaceProfile extends PlaceInfo {
+  placeId: string;
+  types: string[];
+  website: string | null;
+  phone: string | null;
+  /** Horário por dia da semana, como o Google mostra ("segunda-feira: 08:00–18:00"). */
+  hours: string[];
+  /** Quantidade de fotos. Na Places API o máximo é 10 (ver photosCapped). */
+  photos: number;
+  /** true: `photos` é limitado a 10 (Places API); false: total real (scraper). */
+  photosCapped: boolean;
+  /** Respostas do dono entre as avaliações coletadas (só o scraper informa). */
+  ownerReplies: { replied: number; total: number } | null;
+  /** Avaliações por estrela, de 1 a 5 (só o scraper informa). */
+  distribution: [number, number, number, number, number] | null;
+  summary: string | null;
+  priceLevel: string | null;
+  /** Até 5 avaliações em destaque (sem o nome do autor). */
+  sampleReviews: PlaceReview[];
+}
+
+interface ProfileResponse extends DetailsResponse {
+  id?: string;
+  types?: string[];
+  websiteUri?: string;
+  nationalPhoneNumber?: string;
+  regularOpeningHours?: { weekdayDescriptions?: string[] };
+  photos?: unknown[];
+  editorialSummary?: { text?: string };
+  priceLevel?: string;
+  reviews?: Array<{ publishTime?: string; rating?: number; text?: { text?: string }; originalText?: { text?: string } }>;
+}
+
+export function parsePlaceProfile(json: ProfileResponse): PlaceProfile | null {
+  const info = parsePlaceDetails(json);
+  if (!info.placeId) return null;
+  return {
+    ...info,
+    placeId: info.placeId,
+    types: json.types ?? [],
+    website: json.websiteUri ?? null,
+    phone: json.nationalPhoneNumber ?? null,
+    hours: json.regularOpeningHours?.weekdayDescriptions ?? [],
+    photos: json.photos?.length ?? 0,
+    photosCapped: true,
+    ownerReplies: null,
+    distribution: null,
+    summary: json.editorialSummary?.text ?? null,
+    priceLevel: json.priceLevel ?? null,
+    sampleReviews: (json.reviews ?? []).map((r) => ({
+      rating: typeof r.rating === "number" ? r.rating : null,
+      text: (r.originalText?.text ?? r.text?.text ?? "").slice(0, 600) || null,
+      publishTime: r.publishTime ?? null,
+    })),
+  };
+}
+
+export const PLACE_ID_PATTERN = /^[\w-]{10,300}$/;
+
+/** Lê um perfil salvo no banco (coluna jsonb); null se não tiver o mínimo. */
+export function readPlaceProfile(value: unknown): PlaceProfile | null {
+  if (!value || typeof value !== "object") return null;
+  const p = value as Partial<PlaceProfile>;
+  if (typeof p.placeId !== "string" || typeof p.name !== "string") return null;
+  return {
+    placeId: p.placeId,
+    name: p.name,
+    address: p.address ?? null,
+    city: p.city ?? null,
+    state: p.state ?? null,
+    rating: p.rating ?? null,
+    reviews: p.reviews ?? null,
+    category: p.category ?? null,
+    mapsUrl: p.mapsUrl ?? null,
+    businessStatus: p.businessStatus ?? null,
+    lastReviewAt: p.lastReviewAt ?? null,
+    types: Array.isArray(p.types) ? p.types : [],
+    website: p.website ?? null,
+    phone: p.phone ?? null,
+    hours: Array.isArray(p.hours) ? p.hours : [],
+    photos: typeof p.photos === "number" ? p.photos : 0,
+    photosCapped: p.photosCapped ?? true,
+    ownerReplies: p.ownerReplies ?? null,
+    distribution: Array.isArray(p.distribution) && p.distribution.length === 5 ? p.distribution : null,
+    summary: p.summary ?? null,
+    priceLevel: p.priceLevel ?? null,
+    sampleReviews: Array.isArray(p.sampleReviews) ? p.sampleReviews : [],
+  };
+}
+
+/**
+ * Link do Google colado pelo dono (sem a Places API): o "Pedir avaliações" do
+ * Perfil da Empresa (g.page/r/.../review) ou um link do negócio no Maps.
+ * Retorna a URL normalizada, ou null se não for um link do Google.
+ */
+export function normalizeGoogleReviewUrl(input: string): string | null {
+  let value = input.trim();
+  // Aceita o link no meio de um texto copiado ("Avalie a gente: https://g.page/...").
+  const found = /https?:\/\/\S+/i.exec(value);
+  if (found) value = found[0];
+  if (!/^https?:\/\//i.test(value)) value = `https://${value}`;
+
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return null;
+  }
+  const host = url.hostname.toLowerCase().replace(/^www\./, "");
+  const path = url.pathname;
+  const ok =
+    (host === "g.page" && path.length > 1) ||
+    (host === "maps.app.goo.gl" && path.length > 1) ||
+    (host === "goo.gl" && path.startsWith("/maps")) ||
+    host === "search.google.com" ||
+    host === "maps.google.com" ||
+    (/^google\.com(\.[a-z]{2})?$/.test(host) && path.startsWith("/maps"));
+  if (!ok) return null;
+  url.protocol = "https:";
+  return url.toString();
+}
