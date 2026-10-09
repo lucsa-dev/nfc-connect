@@ -243,12 +243,15 @@ export function BusinessSearch({
   value,
   sessionToken,
   placesEnabled,
+  allowManual = true,
   onChange,
 }: {
   value: PlaceInfo | null;
   sessionToken: string;
   /** Há chave da Google Places API no servidor? Sem ela, vai direto ao cadastro manual. */
   placesEnabled: boolean;
+  /** false: só aceita negócios do Google (ex.: ativação do cartão, que precisa do Place ID). */
+  allowManual?: boolean;
   onChange: (place: PlaceInfo | null) => void;
 }) {
   const [query, setQuery] = useState("");
@@ -319,6 +322,14 @@ export function BusinessSearch({
     onChange(place);
   };
 
+  if (!allowManual && unavailable) {
+    return (
+      <p className="flex items-center gap-2 rounded-xl bg-muted p-4 text-sm">
+        <TriangleAlertIcon className="size-4 shrink-0" /> A busca no Google está indisponível no momento. Tente de novo em alguns minutos.
+      </p>
+    );
+  }
+
   if (unavailable || manual) {
     // Retomando um cadastro manual: reaproveita os dados já informados.
     const fromValue = value && !value.placeId ? value : null;
@@ -381,9 +392,11 @@ export function BusinessSearch({
         <p className="text-sm text-muted-foreground">Nenhum resultado ainda. Tente incluir a cidade.</p>
       )}
 
-      <button type="button" onClick={() => setManual(true)} className="w-fit text-sm text-primary hover:underline">
-        Não encontrei meu negócio
-      </button>
+      {allowManual && (
+        <button type="button" onClick={() => setManual(true)} className="w-fit text-sm text-primary hover:underline">
+          Não encontrei meu negócio
+        </button>
+      )}
       {showList && suggestions.length > 0 && <p className="text-[11px] text-muted-foreground">Resultados do Google</p>}
     </div>
   );

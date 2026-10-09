@@ -16,6 +16,12 @@ export function businessSlugCandidates(name: string, city?: string | null): stri
   return [...new Set(candidates)].filter((s) => isValidSlug(s) && !isReservedBusinessSlug(s));
 }
 
+/** Busca no Google Maps por nome e cidade ("Padaria Central, Fortaleza - CE"). */
+export function mapsQueryOf(name: string, city?: string | null, state?: string | null): string | null {
+  if (!city) return null;
+  return `${name.trim()}, ${city.trim()}${state ? ` - ${state.trim()}` : ""}`.slice(0, 200);
+}
+
 /** Observações do negócio criado a partir do lead. */
 export function leadDescription(lead: {
   contact_name: string | null;
