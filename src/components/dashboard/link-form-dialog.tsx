@@ -29,7 +29,7 @@ export type LinkDefaults = Pick<
 >;
 
 const selectClass =
-  "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
+  "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-base outline-none md:text-sm focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
 
 function LinkForm({
   action,
@@ -198,7 +198,7 @@ export function LinkFormDialog({
         {editing ? <PencilIcon /> : <PlusIcon />}
         {editing ? "Editar" : "Adicionar link"}
       </DialogTrigger>
-      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{editing ? "Editar link" : "Novo link"}</DialogTitle>
           <DialogDescription>

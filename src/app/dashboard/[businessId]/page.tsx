@@ -93,7 +93,36 @@ export default async function BusinessPage({ params }: PageProps<"/dashboard/[bu
         </Card>
       ) : (
         <Card className="py-0">
-          <Table>
+          <ul className="divide-y md:hidden">
+            {business.links.map((link) => {
+              const nfcUrl = buildPublicLinkUrl(siteUrl, business.slug, link.slug);
+              const qrUrl = buildPublicLinkUrl(siteUrl, business.slug, link.slug, "qr");
+              const detailsHref = `/dashboard/${business.id}/links/${link.id}`;
+              return (
+                <li key={link.id} className="grid gap-2 p-4">
+                  <Link href={detailsHref} className="flex items-start justify-between gap-3">
+                    <span className="min-w-0">
+                      <span className="block font-medium break-words">{link.name}</span>
+                      <span className="mt-1 flex flex-wrap gap-1.5">
+                        <Badge variant="secondary">{LINK_TYPE_INFO[link.type].label}</Badge>
+                        {!link.is_active && <Badge variant="outline">Inativo</Badge>}
+                      </span>
+                    </span>
+                    <span className="flex shrink-0 items-center gap-1 text-sm text-muted-foreground tabular-nums">
+                      {formatNumber(link.click_count)} {link.click_count === 1 ? "acesso" : "acessos"}
+                      <ChevronRightIcon className="size-4" />
+                    </span>
+                  </Link>
+                  <div className="flex items-center gap-2">
+                    <code className="min-w-0 flex-1 truncate rounded-md bg-muted px-2 py-1.5 text-xs">{nfcUrl}</code>
+                    <CopyButton value={nfcUrl} label="Copiar link da TAG NFC" />
+                    <QrDialog title={link.name} url={qrUrl} filename={`qr-${business.slug}-${link.slug}`} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          <Table className="max-md:hidden">
             <TableHeader>
               <TableRow>
                 <TableHead>Link</TableHead>

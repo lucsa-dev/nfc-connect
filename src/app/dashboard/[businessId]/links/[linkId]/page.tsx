@@ -151,7 +151,7 @@ export default async function LinkPage({ params, searchParams }: Props) {
                   href={`${basePath}?dias=${p}`}
                   scroll={false}
                   aria-current={p === days ? "page" : undefined}
-                  className="rounded-md px-2.5 py-1 text-sm text-muted-foreground aria-[current=page]:bg-background aria-[current=page]:text-foreground aria-[current=page]:shadow-sm"
+                  className="rounded-md px-3 py-1.5 text-sm whitespace-nowrap text-muted-foreground sm:px-2.5 sm:py-1 aria-[current=page]:bg-background aria-[current=page]:text-foreground aria-[current=page]:shadow-sm"
                 >
                   {p} dias
                 </Link>
@@ -168,7 +168,7 @@ export default async function LinkPage({ params, searchParams }: Props) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           <StatTile label={`Acessos em ${days} dias`} value={summary.total} />
           <StatTile label="Visitantes únicos" value={summary.uniqueVisitors} hint="Por IP anonimizado" />
           <StatTile label="Total desde a criação" value={link.click_count} />
@@ -202,32 +202,54 @@ export default async function LinkPage({ params, searchParams }: Props) {
           {recent.length === 0 ? (
             <CardContent className="pb-6 text-sm text-muted-foreground">Nenhum acesso no período.</CardContent>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Origem</TableHead>
-                  <TableHead>Dispositivo</TableHead>
-                  <TableHead>Sistema</TableHead>
-                  <TableHead>Navegador</TableHead>
-                  <TableHead>Local</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              <ul className="divide-y border-t md:hidden">
                 {recent.map((v, i) => (
-                  <TableRow key={`${v.created_at}-${i}`}>
-                    <TableCell className="tabular-nums">{formatDateTime(v.created_at)}</TableCell>
-                    <TableCell>{SOURCE[v.source] ?? v.source}</TableCell>
-                    <TableCell>
-                      {[v.device_vendor, DEVICE[v.device_type ?? ""] ?? v.device_type].filter(Boolean).join(" · ") || "—"}
-                    </TableCell>
-                    <TableCell>{[v.os, v.os_version].filter(Boolean).join(" ") || "—"}</TableCell>
-                    <TableCell>{v.browser ?? "—"}</TableCell>
-                    <TableCell>{[v.city, v.region, v.country].filter(Boolean).join(", ") || "—"}</TableCell>
-                  </TableRow>
+                  <li key={`${v.created_at}-${i}`} className="grid gap-0.5 px-4 py-3 text-sm">
+                    <span className="flex justify-between gap-3">
+                      <span className="tabular-nums">{formatDateTime(v.created_at)}</span>
+                      <Badge variant="secondary">{SOURCE[v.source] ?? v.source}</Badge>
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {[
+                        [v.device_vendor, DEVICE[v.device_type ?? ""] ?? v.device_type].filter(Boolean).join(" "),
+                        [v.os, v.os_version].filter(Boolean).join(" "),
+                        v.browser,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || "Dispositivo desconhecido"}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{[v.city, v.region, v.country].filter(Boolean).join(", ") || "Local desconhecido"}</span>
+                  </li>
                 ))}
-              </TableBody>
-            </Table>
+              </ul>
+              <Table className="max-md:hidden">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Origem</TableHead>
+                    <TableHead>Dispositivo</TableHead>
+                    <TableHead>Sistema</TableHead>
+                    <TableHead>Navegador</TableHead>
+                    <TableHead>Local</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recent.map((v, i) => (
+                    <TableRow key={`${v.created_at}-${i}`}>
+                      <TableCell className="tabular-nums">{formatDateTime(v.created_at)}</TableCell>
+                      <TableCell>{SOURCE[v.source] ?? v.source}</TableCell>
+                      <TableCell>
+                        {[v.device_vendor, DEVICE[v.device_type ?? ""] ?? v.device_type].filter(Boolean).join(" · ") || "—"}
+                      </TableCell>
+                      <TableCell>{[v.os, v.os_version].filter(Boolean).join(" ") || "—"}</TableCell>
+                      <TableCell>{v.browser ?? "—"}</TableCell>
+                      <TableCell>{[v.city, v.region, v.country].filter(Boolean).join(", ") || "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </>
           )}
         </Card>
       </section>

@@ -34,13 +34,13 @@ export default async function LeadsPage({ searchParams }: PageProps<"/dashboard/
     <>
       <PageHeader title="Pedidos" description="Pedidos e interessados que passaram pelo quiz em /comecar." />
 
-      <div className="mb-4 flex flex-wrap rounded-lg bg-muted p-0.5 sm:w-fit" role="group" aria-label="Filtrar por status">
+      <div className="mb-4 flex overflow-x-auto rounded-lg bg-muted p-0.5 sm:w-fit" role="group" aria-label="Filtrar por status">
         {tabs.map((t) => (
           <Link
             key={t.id ?? "todos"}
             href={t.id ? `/dashboard/pedidos?status=${t.id}` : "/dashboard/pedidos"}
             aria-current={t.id === status ? "page" : undefined}
-            className="rounded-md px-2.5 py-1 text-sm text-muted-foreground aria-[current=page]:bg-background aria-[current=page]:text-foreground aria-[current=page]:shadow-sm"
+            className="shrink-0 rounded-md px-3 py-1.5 text-sm whitespace-nowrap text-muted-foreground sm:px-2.5 sm:py-1 aria-[current=page]:bg-background aria-[current=page]:text-foreground aria-[current=page]:shadow-sm"
           >
             {t.label}
             {t.count !== undefined && <span className="ml-1 tabular-nums opacity-70">{t.count}</span>}
@@ -60,7 +60,38 @@ export default async function LeadsPage({ searchParams }: PageProps<"/dashboard/
         </Card>
       ) : (
         <Card className="py-0">
-          <Table>
+          <ul className="divide-y md:hidden">
+            {leads.map((l) => (
+              <li key={l.id}>
+                <Link href={`/dashboard/pedidos/${l.id}`} className="grid gap-1.5 p-4 active:bg-muted/50">
+                  <span className="flex items-start justify-between gap-3">
+                    <span className="min-w-0">
+                      <span className="block font-medium break-words">{l.place_name ?? "Sem nome"}</span>
+                      {(l.place_city || l.place_state) && (
+                        <span className="block text-xs text-muted-foreground">{[l.place_city, l.place_state].filter(Boolean).join(" - ")}</span>
+                      )}
+                    </span>
+                    <Badge variant={VARIANT[l.status as LeadStatus] ?? "outline"} className="shrink-0">
+                      {LEAD_STATUS_LABEL[l.status as LeadStatus] ?? l.status}
+                    </Badge>
+                  </span>
+                  <span className="text-sm">
+                    {l.contact_name ?? "Sem contato"}
+                    {l.whatsapp && <span className="text-muted-foreground tabular-nums"> · {formatBrPhone(l.whatsapp)}</span>}
+                  </span>
+                  <span className="flex flex-wrap justify-between gap-x-3 text-xs text-muted-foreground">
+                    <span>
+                      {[l.plaques ? `${l.plaques} placa(s)` : null, l.cards ? `${l.cards} cartão(ões)` : null].filter(Boolean).join(" + ") || "Sem kit"}
+                      {l.total_cents ? ` · ${formatBRL(l.total_cents)}` : ""}
+                      {l.status === "quiz" && l.step ? ` · parou em: ${l.step}` : ""}
+                    </span>
+                    <span className="tabular-nums">{formatDateTime(l.updated_at)}</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <Table className="max-md:hidden">
             <TableHeader>
               <TableRow>
                 <TableHead>Negócio</TableHead>

@@ -11,9 +11,9 @@ const asDate = (d: string) => new Date(`${d}T12:00:00Z`);
 
 export function StatTile({ label, value, hint }: { label: string; value: number; hint?: string }) {
   return (
-    <div className="rounded-xl bg-card p-4 ring-1 ring-foreground/10">
-      <div className="text-sm text-muted-foreground">{label}</div>
-      <div className="mt-1 text-3xl font-semibold tabular-nums">{formatNumber(value)}</div>
+    <div className="rounded-xl bg-card p-3 ring-1 ring-foreground/10 sm:p-4">
+      <div className="text-xs text-muted-foreground sm:text-sm">{label}</div>
+      <div className="mt-1 text-2xl font-semibold tabular-nums sm:text-3xl">{formatNumber(value)}</div>
       {hint && <div className="mt-1 text-xs text-muted-foreground">{hint}</div>}
     </div>
   );
@@ -37,7 +37,7 @@ export function DailyChart({ data }: { data: DailyBucket[] }) {
             </span>
           </span>
         ) : (
-          <span className="text-muted-foreground">Passe o mouse sobre as barras</span>
+          <span className="text-muted-foreground">Toque ou passe o mouse sobre as barras</span>
         )}
       </div>
       <div
@@ -57,6 +57,7 @@ export function DailyChart({ data }: { data: DailyBucket[] }) {
             type="button"
             className="group flex h-full flex-1 items-end focus-visible:outline-none"
             onMouseEnter={() => setHover(i)}
+            onPointerDown={() => setHover(i)}
             onFocus={() => setHover(i)}
             onBlur={() => setHover(null)}
             aria-label={`${weekdayLabel.format(asDate(d.date))}: ${d.count} acessos`}
@@ -73,7 +74,8 @@ export function DailyChart({ data }: { data: DailyBucket[] }) {
       </div>
       <div className="flex text-[11px] text-muted-foreground">
         {data.map((d, i) => (
-          <span key={d.date} className="flex-1 text-center whitespace-nowrap">
+          // No celular, metade das datas: senão os rótulos se sobrepõem.
+          <span key={d.date} className={`flex-1 text-center whitespace-nowrap ${(i / labelEvery) % 2 ? "max-sm:invisible" : ""}`}>
             {i % labelEvery === 0 ? dayLabel.format(asDate(d.date)) : ""}
           </span>
         ))}

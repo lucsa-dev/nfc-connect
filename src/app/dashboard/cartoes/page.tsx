@@ -45,7 +45,27 @@ export default async function BatchesPage() {
         </Card>
       ) : (
         <Card className="py-0">
-          <Table>
+          <ul className="divide-y md:hidden">
+            {batches.map((b) => (
+              <li key={b.id}>
+                <Link href={`/dashboard/cartoes/${b.id}`} className="grid gap-1 p-4 active:bg-muted/50">
+                  <span className="flex items-start justify-between gap-3">
+                    <span className="min-w-0 font-medium break-words">{b.name}</span>
+                    <Badge variant={b.activated === b.quantity ? "default" : "secondary"} className="shrink-0 tabular-nums">
+                      {formatNumber(b.activated)} de {formatNumber(b.quantity)}
+                    </Badge>
+                  </span>
+                  <span className="flex flex-wrap justify-between gap-x-3 text-xs text-muted-foreground">
+                    <span>
+                      {getProduct(b.product).label} · {getStyle(b.style).label}
+                    </span>
+                    <span className="tabular-nums">{formatDateTime(b.created_at)}</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <Table className="max-md:hidden">
             <TableHeader>
               <TableRow>
                 <TableHead>Lote</TableHead>

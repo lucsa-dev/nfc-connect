@@ -18,7 +18,7 @@ function Chip({ href, active, children }: { href: string; active: boolean; child
       href={href}
       scroll={false}
       aria-current={active ? "page" : undefined}
-      className="rounded-md px-2.5 py-1 text-sm text-muted-foreground aria-[current=page]:bg-background aria-[current=page]:text-foreground aria-[current=page]:shadow-sm"
+      className="shrink-0 rounded-md px-3 py-1.5 text-sm whitespace-nowrap text-muted-foreground sm:px-2.5 sm:py-1 aria-[current=page]:bg-background aria-[current=page]:text-foreground aria-[current=page]:shadow-sm"
     >
       {children}
     </Link>
@@ -61,7 +61,7 @@ export default async function BatchPrintPage({ params, searchParams }: Props) {
           description={`${items.length} × ${product.label}, estilo ${style.label}. Cada peça tem um QR Code único, na mesma ordem da lista do lote.`}
           actions={<PrintButton />}
         />
-        <div className="mb-2 flex rounded-lg bg-muted p-0.5 sm:w-fit" role="group" aria-label="Formato">
+        <div className="mb-2 flex w-fit max-w-full overflow-x-auto rounded-lg bg-muted p-0.5" role="group" aria-label="Formato">
           <Chip href={base} active={format === "grafica"}>
             Gráfica (PDF)
           </Chip>
@@ -74,7 +74,10 @@ export default async function BatchPrintPage({ params, searchParams }: Props) {
         </p>
       </div>
 
-      <PrintSheets format={format} product={product.id} style={style.id} items={items} />
+      {/* Folhas em tamanho real (mm): no celular, rolam de lado em vez de estourar a página. */}
+      <div className="-mx-4 overflow-x-auto px-4 pb-2 print:m-0 print:overflow-visible print:p-0">
+        <PrintSheets format={format} product={product.id} style={style.id} items={items} />
+      </div>
     </>
   );
 }

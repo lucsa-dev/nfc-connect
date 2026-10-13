@@ -37,7 +37,7 @@ function Summary({ label, value, hint }: { label: string; value: string; hint?: 
     <Card>
       <CardContent className="grid gap-0.5">
         <span className="text-xs text-muted-foreground">{label}</span>
-        <span className="text-2xl font-semibold tabular-nums">{value}</span>
+        <span className="text-xl font-semibold tabular-nums sm:text-2xl">{value}</span>
         {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
       </CardContent>
     </Card>
@@ -77,7 +77,7 @@ export default async function GrowthPage() {
         </Card>
       ) : (
         <>
-          <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             <Summary label="Clientes no Google" value={formatNumber(rows.length)} />
             <Summary label="Novas avaliações (30 dias)" value={`+${formatNumber(new30d)}`} />
             <Summary label="Crescendo" value={`${formatNumber(growing)} de ${formatNumber(rows.length)}`} hint="com avaliações novas em 30 dias" />
@@ -85,7 +85,39 @@ export default async function GrowthPage() {
           </div>
 
           <Card className="py-0">
-            <Table>
+            <ul className="divide-y md:hidden">
+              {rows.map(({ id, name, growth: g }) => (
+                <li key={id}>
+                  <Link href={`/dashboard/${id}`} className="grid gap-2 p-4 active:bg-muted/50">
+                    <span className="flex items-start justify-between gap-3">
+                      <span className="min-w-0">
+                        <span className="block font-medium break-words">{name}</span>
+                        <span className="block text-xs text-muted-foreground tabular-nums">
+                          {g?.rating != null ? `Nota ${g.rating.toFixed(1).replace(".", ",")}` : "Sem nota"}
+                          {g?.reviews != null ? ` · ${formatNumber(g.reviews)} avaliações` : ""}
+                        </span>
+                      </span>
+                      {g && <Sparkline series={g.series} />}
+                    </span>
+                    <span className="grid grid-cols-3 gap-2 text-xs">
+                      <span className="grid">
+                        <span className="text-muted-foreground">7 dias</span>
+                        <Delta value={g?.reviews7d ?? null} />
+                      </span>
+                      <span className="grid">
+                        <span className="text-muted-foreground">30 dias</span>
+                        <Delta value={g?.reviews30d ?? null} />
+                      </span>
+                      <span className="grid">
+                        <span className="text-muted-foreground">{g ? `Desde ${formatDate(g.firstAt)}` : "Desde o início"}</span>
+                        <Delta value={g?.reviewsTotal ?? null} />
+                      </span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <Table className="max-md:hidden">
               <TableHeader>
                 <TableRow>
                   <TableHead>Negócio</TableHead>
@@ -94,7 +126,7 @@ export default async function GrowthPage() {
                   <TableHead className="text-right">7 dias</TableHead>
                   <TableHead className="text-right">30 dias</TableHead>
                   <TableHead className="text-right">Desde o início</TableHead>
-                  <TableHead className="hidden md:table-cell">
+                  <TableHead>
                     <span className="sr-only">Tendência</span>
                   </TableHead>
                 </TableRow>
@@ -119,7 +151,7 @@ export default async function GrowthPage() {
                     <TableCell className="text-right">
                       <Delta value={g?.reviewsTotal ?? null} />
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">{g && <Sparkline series={g.series} />}</TableCell>
+                    <TableCell>{g && <Sparkline series={g.series} />}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

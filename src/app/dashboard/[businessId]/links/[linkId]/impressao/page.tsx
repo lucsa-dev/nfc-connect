@@ -18,7 +18,7 @@ function Chip({ href, active, children }: { href: string; active: boolean; child
       href={href}
       scroll={false}
       aria-current={active ? "page" : undefined}
-      className="rounded-md px-2.5 py-1 text-sm text-muted-foreground aria-[current=page]:bg-background aria-[current=page]:text-foreground aria-[current=page]:shadow-sm"
+      className="shrink-0 rounded-md px-3 py-1.5 text-sm whitespace-nowrap text-muted-foreground sm:px-2.5 sm:py-1 aria-[current=page]:bg-background aria-[current=page]:text-foreground aria-[current=page]:shadow-sm"
     >
       {children}
     </Link>
@@ -96,18 +96,18 @@ export default async function PrintPage({ params, searchParams }: Props) {
         </div>
 
         <div className="mb-2 flex flex-wrap items-center gap-4">
-          <div className="flex rounded-lg bg-muted p-0.5" role="group" aria-label="Estilo">
+          <div className="flex max-w-full overflow-x-auto rounded-lg bg-muted p-0.5" role="group" aria-label="Estilo">
             {STYLES.map((s) => (
               <Chip key={s.id} href={href({ estilo: s.id })} active={s.id === style.id}>
                 {s.label}
               </Chip>
             ))}
           </div>
-          <div className="flex rounded-lg bg-muted p-0.5" role="group" aria-label="Formato">
+          <div className="flex max-w-full overflow-x-auto rounded-lg bg-muted p-0.5" role="group" aria-label="Formato">
             <Chip href={href({ formato: "grafica" })} active={format === "grafica"}>Gráfica (PDF)</Chip>
             <Chip href={href({ formato: "a4" })} active={format === "a4"}>Folha A4</Chip>
           </div>
-          <div className="flex rounded-lg bg-muted p-0.5" role="group" aria-label="Identidade">
+          <div className="flex max-w-full overflow-x-auto rounded-lg bg-muted p-0.5" role="group" aria-label="Identidade">
             <Chip href={href({ nome: "0" })} active={!personalized}>Padrão TopTap</Chip>
             <Chip href={href({ nome: "1" })} active={personalized}>Com nome do negócio</Chip>
           </div>
@@ -126,7 +126,10 @@ export default async function PrintPage({ params, searchParams }: Props) {
         )}
       </div>
 
-      <PrintSheets format={format} product={product.id} style={style.id} items={[data]} />
+      {/* Folhas em tamanho real (mm): no celular, rolam de lado em vez de estourar a página. */}
+      <div className="-mx-4 overflow-x-auto px-4 pb-2 print:m-0 print:overflow-visible print:p-0">
+        <PrintSheets format={format} product={product.id} style={style.id} items={[data]} />
+      </div>
     </>
   );
 }

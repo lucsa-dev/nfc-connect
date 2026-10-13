@@ -68,7 +68,43 @@ export default async function BatchPage({ params }: Props) {
       </p>
 
       <Card className="py-0">
-        <Table>
+        <ul className="divide-y md:hidden">
+          {batch.cards.map((card) => {
+            const url = buildCardUrl(siteUrl, card.code);
+            const business = card.link?.business;
+            return (
+              <li key={card.id} className="grid gap-2 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-baseline gap-2">
+                    <span className="text-sm text-muted-foreground tabular-nums">#{card.position}</span>
+                    {business ? (
+                      <div className="min-w-0">
+                        <Link href={`/dashboard/${business.id}`} className="font-medium break-words hover:underline">
+                          {business.name}
+                        </Link>
+                        {card.activated_at && (
+                          <div className="text-xs text-muted-foreground tabular-nums">ativada em {formatDateTime(card.activated_at)}</div>
+                        )}
+                      </div>
+                    ) : (
+                      <Badge variant="outline">Em branco</Badge>
+                    )}
+                  </div>
+                  {card.link && (
+                    <span className="shrink-0 text-sm text-muted-foreground tabular-nums">
+                      {formatNumber(card.link.click_count)} {card.link.click_count === 1 ? "acesso" : "acessos"}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <code className="min-w-0 flex-1 truncate rounded-md bg-muted px-2 py-1.5 text-xs">{url}</code>
+                  <CopyButton value={url} label="Copiar link do chip NFC" />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+        <Table className="max-md:hidden">
           <TableHeader>
             <TableRow>
               <TableHead className="w-12">#</TableHead>

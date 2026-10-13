@@ -85,7 +85,7 @@ export function BatchForm({ art }: { art: ArtData }) {
       </Step>
 
       <div className="flex flex-wrap items-center gap-3 border-t pt-6">
-        <Button type="submit" size="lg" disabled={pending || !(n >= 1 && n <= BATCH_MAX)}>
+        <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={pending || !(n >= 1 && n <= BATCH_MAX)}>
           {pending ? "Gerando..." : n >= 1 ? `Gerar ${n} × ${chosen.label.toLowerCase()}` : "Gerar lote"}
         </Button>
         <span className="text-sm text-muted-foreground">
