@@ -35,7 +35,6 @@ import { PhoneMock } from "@/components/landing/phone-mock";
 import { WhatsAppFab } from "@/components/landing/whatsapp-fab";
 import { ThemeSwitcher } from "@/components/theme/theme-switcher";
 import { CARD_COPY, displayUrl, qrPath, STYLES } from "@/lib/card";
-import { formatBRL, PRICING } from "@/lib/pricing";
 import { getSiteSettings } from "@/lib/settings";
 import { siteConfig, whatsappHref } from "@/lib/site-config";
 import { getSiteUrl } from "@/lib/urls";
@@ -213,11 +212,6 @@ export default async function LandingPage() {
               <p className="mt-5 max-w-xl text-lg text-pretty text-muted-foreground">
                 A placa TopTap fica fixa no seu balcão: o cliente aproxima o celular ou escaneia o QR Code e cai direto na
                 tela de avaliação do seu negócio. Sem procurar no Google, sem digitar nada, sem baixar app.
-              </p>
-              <p className="mt-5 text-lg">
-                <span className="text-muted-foreground">Placa a partir de </span>
-                <span className="font-heading text-2xl font-semibold">{formatBRL(PRICING.plaque)}</span>
-                <span className="text-muted-foreground"> · pagamento único, sem mensalidade</span>
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <CtaButton />
