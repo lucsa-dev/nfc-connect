@@ -25,11 +25,13 @@ export default async function ActivatePage({ params }: PageProps<"/c/[code]/ativ
   if (!code) notFound();
 
   const supabase = createAdminClient();
-  const { data: card } = await supabase
+  const { data: card, error } = await supabase
     .from("cards")
     .select("code, batch:card_batches(product), link:links(url, business:businesses(name))")
     .eq("code", code)
     .maybeSingle();
+  // Erro do banco não é "cartão não encontrado": deixa aparecer nos logs.
+  if (error) throw new Error(`Falha ao buscar a peça ${code}: ${error.code} ${error.message}`);
   if (!card) notFound();
 
   const piece = getProduct(card.batch?.product).kind === "plaque" ? "placa" : "cartão";

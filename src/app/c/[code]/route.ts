@@ -14,7 +14,7 @@ function repository(): CardRepository {
         .select("code, link:links(id, business_id, url, type, pix_key, is_active, slug, business:businesses(slug))")
         .eq("code", code)
         .maybeSingle();
-      if (error) throw error;
+      if (error) throw new Error(`${error.code} ${error.message}`);
       if (!data) return null;
       const link = data.link;
       if (!link?.business) return { code: data.code, link: null };
@@ -33,12 +33,22 @@ function repository(): CardRepository {
 export async function GET(request: Request, ctx: RouteContext<"/c/[code]">) {
   const { code } = await ctx.params;
 
-  const decision = await resolveCard({
-    code,
-    request,
-    repo: repository(),
-    ipSalt: process.env.IP_HASH_SALT ?? "",
-  });
+  let decision;
+  try {
+    decision = await resolveCard({
+      code,
+      request,
+      repo: repository(),
+      ipSalt: process.env.IP_HASH_SALT ?? "",
+    });
+  } catch (error) {
+    // Sem isto a resposta era um 500 vazio (tela branca no celular).
+    console.error("Falha ao buscar a peça", code, error);
+    return new Response("Não foi possível abrir este cartão agora. Tente de novo em instantes.", {
+      status: 503,
+      headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store, max-age=0" },
+    });
+  }
 
   if (decision.kind === "not_found") {
     return new Response("Cartão não encontrado ou desativado.", {
