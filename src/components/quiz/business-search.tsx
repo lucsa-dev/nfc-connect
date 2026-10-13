@@ -379,6 +379,7 @@ export function BusinessSearch({
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [searching, setSearching] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [unavailable, setUnavailable] = useState(!placesEnabled);
   const [manual, setManual] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -396,6 +397,7 @@ export function BusinessSearch({
       const result = await searchPlaces(q, sessionToken);
       if (id !== requestId.current) return;
       setSearching(false);
+      setFailed(!result.ok && result.reason === "erro");
       if (result.ok) setSuggestions(result.suggestions);
       else if (result.reason === "indisponivel") setUnavailable(true);
       else setSuggestions([]);
@@ -525,7 +527,10 @@ export function BusinessSearch({
           ))}
         </ul>
       )}
-      {showList && !searching && suggestions.length === 0 && (
+      {showList && !searching && failed && (
+        <p className="text-sm text-destructive">A busca no Google falhou. Tente de novo ou cadastre manualmente.</p>
+      )}
+      {showList && !searching && !failed && suggestions.length === 0 && (
         <p className="text-sm text-muted-foreground">Nenhum resultado ainda. Tente incluir a cidade.</p>
       )}
 

@@ -1,4 +1,5 @@
 import "server-only";
+import { autocompleteBody, PLACES_BASE } from "@/lib/places";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export interface DiagnosticItem {
@@ -45,12 +46,32 @@ export async function runDiagnostics(): Promise<DiagnosticItem[]> {
     env("APIFY_TOKEN", "Token definido: métricas do Google Maps pelo scraper.", "Sem token: sem métricas do Google, evolução e busca no quiz."),
     env("OPENAI_API_KEY", "Chave definida: análise do perfil com IA.", "Sem chave: o painel mostra só o checklist do perfil."),
     env("CRON_SECRET", "Definido: coleta semanal e webhook da Apify protegidos.", "Sem segredo: a coleta semanal não roda."),
-    env(
-      "GOOGLE_PLACES_API_KEY",
-      "Chave definida: autocomplete do negócio no quiz e na ativação.",
-      "Opcional. Sem ela, o quiz busca pela Apify (botão Buscar) ou pede nome e cidade.",
-      false,
-    ),
   );
+  items.push(await checkPlaces());
   return items;
+}
+
+/** Faz uma busca real na Places API (New): a chave pode existir e o Google recusar. */
+async function checkPlaces(): Promise<DiagnosticItem> {
+  const label = "GOOGLE_PLACES_API_KEY";
+  const key = process.env.GOOGLE_PLACES_API_KEY;
+  if (!key) return { label, ok: true, detail: "Opcional. Sem ela, o quiz busca pela Apify (botão Buscar) ou pede nome e cidade." };
+  try {
+    const res = await fetch(`${PLACES_BASE}/places:autocomplete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Goog-Api-Key": key },
+      body: JSON.stringify(autocompleteBody("padaria", crypto.randomUUID())),
+      cache: "no-store",
+      signal: AbortSignal.timeout(5000),
+    });
+    if (res.ok) return { label, ok: true, detail: "Chave funcionando: autocomplete do negócio no quiz e na ativação." };
+    const body = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
+    const hint =
+      res.status === 403
+        ? " Ative a \"Places API (New)\" e o faturamento no projeto do Google Cloud e confira as restrições da chave (sem restrição de HTTP referrer)."
+        : "";
+    return { label, ok: false, detail: `O Google recusou (${res.status}): ${body?.error?.message ?? res.statusText}.${hint}` };
+  } catch (error) {
+    return { label, ok: false, detail: error instanceof Error ? error.message : "Erro desconhecido" };
+  }
 }

@@ -40,7 +40,7 @@ export async function searchPlaces(input: string, sessionToken: string): Promise
       cache: "no-store",
       signal: AbortSignal.timeout(5000),
     });
-    if (!res.ok) throw new Error(`Places autocomplete ${res.status}`);
+    if (!res.ok) throw new Error(`Places autocomplete ${res.status}: ${await res.text()}`);
     return { ok: true, suggestions: parseAutocomplete(await res.json()) };
   } catch (error) {
     console.error(error);
@@ -59,7 +59,7 @@ export async function getPlace(placeId: string, sessionToken: string): Promise<P
       cache: "no-store",
       signal: AbortSignal.timeout(5000),
     });
-    if (!res.ok) throw new Error(`Places details ${res.status}`);
+    if (!res.ok) throw new Error(`Places details ${res.status}: ${await res.text()}`);
     return parsePlaceDetails(await res.json());
   } catch (error) {
     console.error(error);
