@@ -453,6 +453,7 @@ export function PrintArt({
   side = "front",
   data,
   bleed = false,
+  transparent = false,
   className,
 }: {
   product: ProductId;
@@ -461,6 +462,8 @@ export function PrintArt({
   data: ArtData;
   /** true: inclui a sangria (para gráfica). false: só a área final. */
   bleed?: boolean;
+  /** true: sem o fundo, só os elementos (a cor do material faz o fundo). */
+  transparent?: boolean;
   className?: string;
 }) {
   const product = getProduct(productId);
@@ -478,7 +481,7 @@ export function PrintArt({
       role="img"
       aria-label={`${product.label}${product.sides.length > 1 ? (side === "front" ? ", frente" : ", verso") : ""}: ${data.copy.headline}`}
     >
-      <rect x={-B} y={-B} width={fullWidth} height={fullHeight} fill={t.background} />
+      {!transparent && <rect x={-B} y={-B} width={fullWidth} height={fullHeight} fill={t.background} />}
       <Layout data={data} t={t} w={w} h={h} />
     </svg>
   );

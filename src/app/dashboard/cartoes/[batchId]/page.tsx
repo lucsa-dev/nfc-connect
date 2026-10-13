@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DownloadIcon, PrinterIcon } from "lucide-react";
+import { PngZipButton } from "@/components/cards/png-zip-button";
 import { ConfirmDelete } from "@/components/dashboard/confirm-delete";
 import { CopyButton } from "@/components/dashboard/copy-button";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -12,6 +13,7 @@ import { getProduct, getStyle } from "@/lib/card";
 import { buildCardUrl } from "@/lib/cards";
 import { getBatch } from "@/lib/data";
 import { formatDateTime, formatNumber } from "@/lib/format";
+import { slugify } from "@/lib/slug";
 import { getSiteUrl } from "@/lib/urls";
 import { deleteBatch } from "../actions";
 
@@ -43,6 +45,12 @@ export default async function BatchPage({ params }: Props) {
             <Button variant="outline" nativeButton={false} render={<a href={`/dashboard/cartoes/${batch.id}/export`} download />}>
               <DownloadIcon /> Links (CSV)
             </Button>
+            <PngZipButton
+              product={product.id}
+              style={getStyle(batch.style).id}
+              cards={batch.cards.map((c) => ({ position: c.position, code: c.code, qrUrl: buildCardUrl(siteUrl, c.code, "qr") }))}
+              filename={`lote-${slugify(batch.name) || batch.id}.zip`}
+            />
             {activated === 0 && (
               <ConfirmDelete
                 title="Excluir lote?"
