@@ -101,3 +101,37 @@ export async function getDatasetItems(datasetId: string): Promise<ApifyPlaceItem
     if (page.length < limit) return items;
   }
 }
+
+/**
+ * Inicia o scraper com uma entrada qualquer e devolve o id da execução.
+ * O painel confere o andamento com getRun (sem depender de webhook).
+ */
+export async function startRun(input: object): Promise<string> {
+  const res = await fetch(`${API}/acts/${actor()}/runs`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify(input),
+    cache: "no-store",
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!res.ok) throw new Error(`Apify ${res.status}: ${await res.text()}`);
+  const json = (await res.json()) as { data?: { id?: string } };
+  if (!json.data?.id) throw new Error("Apify: execução sem id");
+  return json.data.id;
+}
+
+export type RunState = "running" | "succeeded" | "failed";
+
+/** Andamento de uma execução: READY/RUNNING, SUCCEEDED ou FAILED/ABORTED/TIMED-OUT. */
+export async function getRun(runId: string): Promise<{ state: RunState; datasetId: string | null }> {
+  const res = await fetch(`${API}/actor-runs/${encodeURIComponent(runId)}`, {
+    headers: headers(),
+    cache: "no-store",
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!res.ok) throw new Error(`Apify run ${res.status}: ${await res.text()}`);
+  const json = (await res.json()) as { data?: { status?: string; defaultDatasetId?: string } };
+  const status = json.data?.status ?? "";
+  const state: RunState = status === "SUCCEEDED" ? "succeeded" : ["READY", "RUNNING", "TIMING-OUT", "ABORTING"].includes(status) ? "running" : "failed";
+  return { state, datasetId: json.data?.defaultDatasetId ?? null };
+}

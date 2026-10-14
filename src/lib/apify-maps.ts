@@ -1,4 +1,5 @@
-import type { PlaceProfile } from "@/lib/places";
+import { competitorFromProfile, estimatePace, type Competitor } from "@/lib/market";
+import { readLatLng, type PlaceProfile } from "@/lib/places";
 
 /**
  * Google Maps Scraper da Apify (compass/crawler-google-places): montagem da
@@ -62,6 +63,9 @@ export interface ApifyPlaceItem {
   temporarilyClosed?: boolean;
   description?: string | null;
   price?: string | null;
+  /** Posição do lugar no resultado da busca (1 = primeiro). */
+  rank?: number | null;
+  location?: { lat?: number; lng?: number } | null;
   reviews?: Array<{ text?: string | null; stars?: number | null; publishedAtDate?: string | null; responseFromOwnerText?: string | null }>;
 }
 
@@ -88,6 +92,7 @@ export function parseApifyPlace(item: ApifyPlaceItem): PlaceProfile | null {
     mapsUrl: item.url ?? null,
     businessStatus: item.permanentlyClosed ? "CLOSED_PERMANENTLY" : item.temporarilyClosed ? "CLOSED_TEMPORARILY" : "OPERATIONAL",
     lastReviewAt: times.length ? times[times.length - 1]! : null,
+    location: readLatLng(item.location),
     types: item.categories ?? (item.categoryName ? [item.categoryName] : []),
     website: item.website || null,
     phone: item.phone || null,
@@ -173,4 +178,108 @@ export function searchActorInput(query: string) {
     maxImages: 0,
     scrapeContacts: false,
   };
+}
+
+// Concorrência e prospecção -------------------------------------------------------
+
+/** Quantos negócios coletar na busca de concorrentes e na prospecção. */
+export const MARKET_PLACES = 15;
+export const PROSPECT_PLACES = 40;
+/** Avaliações por negócio: o bastante para estimar o ritmo e ler as reclamações. */
+export const MARKET_REVIEWS = 20;
+export const PROSPECT_REVIEWS = 10;
+
+/** Texto da busca como o cliente digitaria no Maps: "padaria em Aldeota, Fortaleza". */
+export function marketQuery(term: string, area: string): string {
+  return `${term.trim()} em ${area.trim()}`.slice(0, 200);
+}
+
+/**
+ * Busca dos concorrentes e, na mesma execução, o próprio negócio pelo Place ID
+ * (para ter os dados dele mesmo quando não aparece entre os primeiros).
+ */
+export function marketActorInput(term: string, area: string, placeId: string) {
+  return {
+    searchStringsArray: [marketQuery(term, area), `place_id:${placeId}`],
+    maxCrawledPlacesPerSearch: MARKET_PLACES,
+    language: "pt-BR",
+    countryCode: "br",
+    maxReviews: MARKET_REVIEWS,
+    reviewsSort: "newest",
+    scrapeReviewsPersonalData: false,
+    scrapePlaceDetailPage: false,
+    maxImages: 0,
+    scrapeContacts: false,
+  };
+}
+
+export function prospectActorInput(term: string, area: string) {
+  return {
+    searchStringsArray: [marketQuery(term, area)],
+    maxCrawledPlacesPerSearch: PROSPECT_PLACES,
+    language: "pt-BR",
+    countryCode: "br",
+    maxReviews: PROSPECT_REVIEWS,
+    reviewsSort: "newest",
+    scrapeReviewsPersonalData: false,
+    scrapePlaceDetailPage: false,
+    maxImages: 0,
+    scrapeContacts: false,
+  };
+}
+
+/** Item do scraper como Competitor (todas as avaliações coletadas, não só 8). */
+export function parseCompetitor(item: ApifyPlaceItem, now = new Date()): (Competitor & { closed: boolean }) | null {
+  const profile = parseApifyPlace(item);
+  if (!profile) return null;
+  const recent = (item.reviews ?? []).map((r) => ({
+    stars: typeof r.stars === "number" ? r.stars : null,
+    date: r.publishedAtDate ?? null,
+    replied: Boolean(r.responseFromOwnerText?.trim()),
+    text: r.text?.trim().slice(0, 400) || null,
+  }));
+  const base = competitorFromProfile(profile, typeof item.rank === "number" ? item.rank : null, now);
+  return {
+    ...base,
+    recent,
+    pace: estimatePace(recent.map((r) => r.date), base.reviews, now),
+    closed: profile.businessStatus !== "OPERATIONAL",
+  };
+}
+
+/**
+ * Separa o resultado da execução do relatório: o negócio (busca por Place ID,
+ * com a posição que ele teve na busca do termo, se apareceu) e os concorrentes.
+ */
+export function splitMarketItems(
+  items: ApifyPlaceItem[],
+  placeId: string,
+  now = new Date(),
+): { client: Competitor | null; competitors: Competitor[] } {
+  const byId = `place_id:${placeId}`;
+  const fromSearch = items.filter((i) => i.searchString !== byId);
+  const seen = new Set<string>();
+  const competitors: Competitor[] = [];
+  let rankOfClient: number | null = null;
+  for (const item of [...fromSearch].sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999))) {
+    const c = parseCompetitor(item, now);
+    if (!c || seen.has(c.placeId)) continue;
+    seen.add(c.placeId);
+    if (c.placeId === placeId) {
+      rankOfClient = c.rank;
+      continue;
+    }
+    const { closed, ...rest } = c;
+    if (!closed) competitors.push(rest);
+  }
+  // A busca pelo termo também pode trazer o próprio negócio; prefere o item mais completo.
+  const own = items.filter((i) => i.placeId === placeId).sort((a, b) => (b.reviews?.length ?? 0) - (a.reviews?.length ?? 0))[0];
+  const parsed = own ? parseCompetitor(own, now) : null;
+  let client: Competitor | null = null;
+  if (parsed) {
+    const { closed, ...rest } = parsed;
+    // Fechado aparece no relatório mesmo assim: o dono precisa saber.
+    client = { ...rest, rank: closed ? null : rankOfClient };
+  }
+  return { client, competitors };
 }

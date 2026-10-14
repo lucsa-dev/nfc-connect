@@ -129,6 +129,7 @@ export const PROFILE_FIELDS = [
   "photos",
   "editorialSummary",
   "priceLevel",
+  "location",
 ].join(",");
 
 export interface PlaceReview {
@@ -139,8 +140,15 @@ export interface PlaceReview {
   ownerReplied?: boolean;
 }
 
+export interface LatLng {
+  lat: number;
+  lng: number;
+}
+
 export interface PlaceProfile extends PlaceInfo {
   placeId: string;
+  /** Coordenadas do negócio (centro do mapa de ranking). */
+  location: LatLng | null;
   types: string[];
   website: string | null;
   phone: string | null;
@@ -169,6 +177,7 @@ interface ProfileResponse extends DetailsResponse {
   photos?: unknown[];
   editorialSummary?: { text?: string };
   priceLevel?: string;
+  location?: { latitude?: number; longitude?: number };
   reviews?: Array<{ publishTime?: string; rating?: number; text?: { text?: string }; originalText?: { text?: string } }>;
 }
 
@@ -178,6 +187,10 @@ export function parsePlaceProfile(json: ProfileResponse): PlaceProfile | null {
   return {
     ...info,
     placeId: info.placeId,
+    location:
+      typeof json.location?.latitude === "number" && typeof json.location.longitude === "number"
+        ? { lat: json.location.latitude, lng: json.location.longitude }
+        : null,
     types: json.types ?? [],
     website: json.websiteUri ?? null,
     phone: json.nationalPhoneNumber ?? null,
@@ -208,6 +221,12 @@ export const PLACES_CACHE_DAYS = 30;
 
 export const PLACE_ID_PATTERN = /^[\w-]{10,300}$/;
 
+export function readLatLng(value: unknown): LatLng | null {
+  if (!value || typeof value !== "object") return null;
+  const { lat, lng } = value as Partial<LatLng>;
+  return typeof lat === "number" && typeof lng === "number" && Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+}
+
 /** Lê um perfil salvo no banco (coluna jsonb); null se não tiver o mínimo. */
 export function readPlaceProfile(value: unknown): PlaceProfile | null {
   if (!value || typeof value !== "object") return null;
@@ -225,6 +244,7 @@ export function readPlaceProfile(value: unknown): PlaceProfile | null {
     mapsUrl: p.mapsUrl ?? null,
     businessStatus: p.businessStatus ?? null,
     lastReviewAt: p.lastReviewAt ?? null,
+    location: readLatLng(p.location),
     types: Array.isArray(p.types) ? p.types : [],
     website: p.website ?? null,
     phone: p.phone ?? null,

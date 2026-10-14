@@ -18,6 +18,7 @@ const profile: PlaceProfile = {
   mapsUrl: "https://maps.google.com/?cid=1",
   businessStatus: "OPERATIONAL",
   lastReviewAt: "2026-10-01T10:00:00Z",
+  location: { lat: -3.73, lng: -38.52 },
   types: ["bakery"],
   website: "https://padaria.com.br",
   phone: "(85) 3333-4444",
