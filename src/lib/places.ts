@@ -196,6 +196,16 @@ export function parsePlaceProfile(json: ProfileResponse): PlaceProfile | null {
   };
 }
 
+/**
+ * De onde veio o perfil: só a Places API limita as fotos a 10 (photosCapped).
+ * O conteúdo da Places API só pode ficar guardado por até 30 dias.
+ */
+export const profileSource = (profile: Pick<PlaceProfile, "photosCapped">): "places" | "apify" =>
+  profile.photosCapped ? "places" : "apify";
+
+/** Prazo de cache permitido pelos termos da Places API. */
+export const PLACES_CACHE_DAYS = 30;
+
 export const PLACE_ID_PATTERN = /^[\w-]{10,300}$/;
 
 /** Lê um perfil salvo no banco (coluna jsonb); null se não tiver o mínimo. */

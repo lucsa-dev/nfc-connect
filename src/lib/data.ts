@@ -146,6 +146,9 @@ export async function getBatch(batchId: string) {
 
 // Google Maps ---------------------------------------------------------------------
 
+/** Filtro das linhas com prazo (conteúdo da Places API): só as que ainda valem. */
+export const notExpired = (now = new Date()) => `expires_at.is.null,expires_at.gt.${now.toISOString()}`;
+
 /** Coletas do Google de um negócio, mais recentes primeiro. */
 export async function getPlaceSnapshots(businessId: string, limit = 60) {
   const supabase = await createClient();
@@ -153,6 +156,7 @@ export async function getPlaceSnapshots(businessId: string, limit = 60) {
     .from("place_snapshots")
     .select("id, created_at, rating, reviews, profile, analysis, analyzed_at")
     .eq("business_id", businessId)
+    .or(notExpired())
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) throw error;
@@ -170,6 +174,7 @@ export async function listSnapshotPoints(days = 365, limit = 20000) {
       .from("place_snapshots")
       .select("business_id, created_at, rating, reviews")
       .gte("created_at", since.toISOString())
+      .or(notExpired())
       .order("created_at", { ascending: true })
       .order("id", { ascending: true })
       .range(from, to);
@@ -190,3 +195,4 @@ export async function listGoogleBusinesses() {
   if (error) throw error;
   return data;
 }
+

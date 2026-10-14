@@ -4,7 +4,15 @@ import type { Database, Json } from "@/lib/database.types";
 import type { MapsTarget } from "@/lib/apify-maps";
 import { apifyEnabled, scrapeMapsSync } from "@/lib/apify";
 import { analysisRequestBody, DEFAULT_OPENAI_MODEL, OPENAI_URL, parseAnalysisResponse, type Analysis } from "@/lib/google-analysis";
-import { parsePlaceProfile, PLACE_ID_PATTERN, PLACES_BASE, PROFILE_FIELDS, type PlaceProfile } from "@/lib/places";
+import {
+  parsePlaceProfile,
+  PLACE_ID_PATTERN,
+  PLACES_BASE,
+  PLACES_CACHE_DAYS,
+  PROFILE_FIELDS,
+  profileSource,
+  type PlaceProfile,
+} from "@/lib/places";
 
 /**
  * Dados do Google Maps e análise da IA (as chaves nunca vão para o navegador).
@@ -105,6 +113,7 @@ export async function analyzeProfile(profile: PlaceProfile): Promise<Analysis | 
 
 /** Grava uma coleta do perfil e devolve o id da linha. */
 export async function saveSnapshot(supabase: Client, businessId: string, profile: PlaceProfile): Promise<number | null> {
+  const source = profileSource(profile);
   const { data, error } = await supabase
     .from("place_snapshots")
     .insert({
@@ -113,6 +122,8 @@ export async function saveSnapshot(supabase: Client, businessId: string, profile
       rating: profile.rating,
       reviews: profile.reviews,
       profile: profile as unknown as Json,
+      source,
+      expires_at: source === "places" ? new Date(Date.now() + PLACES_CACHE_DAYS * 86_400_000).toISOString() : null,
     })
     .select("id")
     .single();
