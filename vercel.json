@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/google",
       "schedule": "0 9 * * 1"
+    },
+    {
+      "path": "/api/cron/limpeza",
+      "schedule": "30 6 * * *"
     }
   ]
 }
