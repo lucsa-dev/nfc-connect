@@ -421,39 +421,107 @@ export type Database = {
         }
         Relationships: []
       }
+      market_reports: {
+        Row: {
+          analysis: Json | null
+          area: string
+          business_id: string | null
+          created_at: string
+          data: Json | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          name: string
+          owner_id: string
+          place_id: string
+          run_id: string | null
+          status: string
+          term: string
+          token: string
+        }
+        Insert: {
+          analysis?: Json | null
+          area: string
+          business_id?: string | null
+          created_at?: string
+          data?: Json | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          name: string
+          owner_id?: string
+          place_id: string
+          run_id?: string | null
+          status?: string
+          term: string
+          token?: string
+        }
+        Update: {
+          analysis?: Json | null
+          area?: string
+          business_id?: string | null
+          created_at?: string
+          data?: Json | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+          place_id?: string
+          run_id?: string | null
+          status?: string
+          term?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_reports_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       place_snapshots: {
         Row: {
           analysis: Json | null
           analyzed_at: string | null
           business_id: string
           created_at: string
+          expires_at: string | null
           id: number
           place_id: string
           profile: Json
           rating: number | null
           reviews: number | null
+          source: string
         }
         Insert: {
           analysis?: Json | null
           analyzed_at?: string | null
           business_id: string
           created_at?: string
+          expires_at?: string | null
           id?: never
           place_id: string
           profile?: Json
           rating?: number | null
           reviews?: number | null
+          source?: string
         }
         Update: {
           analysis?: Json | null
           analyzed_at?: string | null
           business_id?: string
           created_at?: string
+          expires_at?: string | null
           id?: never
           place_id?: string
           profile?: Json
           rating?: number | null
           reviews?: number | null
+          source?: string
         }
         Relationships: [
           {
@@ -461,6 +529,92 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prospect_searches: {
+        Row: {
+          area: string
+          created_at: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          owner_id: string
+          results: Json
+          run_id: string | null
+          status: string
+          term: string
+        }
+        Insert: {
+          area: string
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          owner_id?: string
+          results?: Json
+          run_id?: string | null
+          status?: string
+          term: string
+        }
+        Update: {
+          area?: string
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          owner_id?: string
+          results?: Json
+          run_id?: string | null
+          status?: string
+          term?: string
+        }
+        Relationships: []
+      }
+      rank_grids: {
+        Row: {
+          center_lat: number
+          center_lng: number
+          created_at: string
+          expires_at: string
+          id: number
+          points: Json
+          report_id: string
+          size: number
+          spacing_m: number
+          term: string
+        }
+        Insert: {
+          center_lat: number
+          center_lng: number
+          created_at?: string
+          expires_at?: string
+          id?: never
+          points?: Json
+          report_id: string
+          size: number
+          spacing_m: number
+          term: string
+        }
+        Update: {
+          center_lat?: number
+          center_lng?: number
+          created_at?: string
+          expires_at?: string
+          id?: never
+          points?: Json
+          report_id?: string
+          size?: number
+          spacing_m?: number
+          term?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rank_grids_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "market_reports"
             referencedColumns: ["id"]
           },
         ]
