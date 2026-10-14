@@ -2,6 +2,7 @@ import { BRAND, NfcWaves, Stars } from "@/components/brand/logo";
 import {
   balanceLines,
   CARD,
+  CARD_COPY,
   fitFontSize,
   getProduct,
   productSize,
@@ -218,51 +219,83 @@ function BrandMark({ x, y, color, anchor = "end" }: { x: number; y: number; colo
 
 // Placas (só frente) -------------------------------------------------------------
 
-function PlaqueSquare({ data, t, w, h }: LayoutProps) {
-  const cx = w / 2;
-  const pad = 8;
-  const inner = w - 2 * pad;
-  const { lines, size } = headlineLines(data.copy.headline, inner, { max: 7.6, min: 5 });
-  const top = 15;
-  const headline = lines.map((line, i) => (
-    <Text key={line} x={cx} y={top + i * size * LINE} size={size} color={t.text} anchor="middle">
-      {line}
-    </Text>
-  ));
-  const sublineY = top + lines.length * size * LINE + 0.5;
-  const starsY = sublineY + 7.5;
+/** "G" do Google com altura/largura `size` mm, canto superior esquerdo em (x, y). */
+function GoogleG({ x, y, size }: { x: number; y: number; size: number }) {
+  return (
+    <g transform={`translate(${x} ${y}) scale(${size / 48})`}>
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+    </g>
+  );
+}
 
-  const boxY = starsY + 7;
-  const box = 38;
-  const gap = inner - 2 * box;
-  const nfcX = pad;
-  const qrX = pad + box + gap;
-  const labelY = boxY + box + 6;
-  const wavesH = 22;
+/** Cantoneiras de mira em volta de um quadrado (x, y, size), afastadas `gap` mm. */
+function ScanCorners({ x, y, size, gap, color }: { x: number; y: number; size: number; gap: number; color: string }) {
+  const a = 6; // comprimento de cada braço
+  const l = x - gap;
+  const t = y - gap;
+  const r = x + size + gap;
+  const b = y + size + gap;
+  const d = [
+    `M${l} ${t + a} V${t} H${l + a}`,
+    `M${r - a} ${t} H${r} V${t + a}`,
+    `M${r} ${b - a} V${b} H${r - a}`,
+    `M${l + a} ${b} H${l} V${b - a}`,
+  ].join(" ");
+  return <path d={d} fill="none" stroke={color} strokeWidth={0.8} strokeLinecap="round" strokeLinejoin="round" />;
+}
+
+/**
+ * Placa 10 × 10: G do Google, chamada, 5 estrelas e QR Code grande no centro.
+ * O chip NFC fica colado atrás da faixa "Aproxime o celular", no rodapé.
+ * Sem a marca TopTap na frente; o nome do negócio entra só nas personalizadas.
+ */
+function PlaqueSquare({ data, t, w }: LayoutProps) {
+  const cx = w / 2;
+  const inner = w - 2 * 9;
+  const isReview = data.copy.headline === CARD_COPY.review.headline;
+
+  const gSize = 11;
+  const gY = 6;
+  // Sem o G (Pix, cartão de visita...), tudo sobe e o QR fica no centro.
+  const headlineY = isReview ? gY + gSize + 7.2 : 18;
+  // Personalizada: o nome do negócio entra no lugar da chamada.
+  const headline = data.businessName ?? data.copy.headline;
+  const size = fitFontSize(headline, inner, { max: 6.4, min: 4.2 });
+  const starsY = headlineY + 5.6;
+
+  const qrSize = 43;
+  const qrY = isReview ? starsY + 6.4 : headlineY + 9;
+
+  const pillH = 8;
+  const pillY = qrY + qrSize + 5.2;
+  const label = `${data.copy.cta} ou escaneie`;
+  const labelSize = fitFontSize(label, inner - 14, { max: 3.1, min: 2.4 });
+  const wavesH = 5.4;
+  const contentW = wavesWidth(wavesH) + 2 + label.length * labelSize * 0.55;
+  const pillW = Math.min(inner, contentW + 9);
+  const startX = cx - contentW / 2;
 
   return (
     <>
-      {headline}
-      <Text x={cx} y={sublineY} size={3.6} color={t.muted} weight={500} anchor="middle">
-        {data.copy.subline}
+      {isReview && <GoogleG x={cx - gSize / 2} y={gY} size={gSize} />}
+      <Text x={cx} y={headlineY} size={size} color={data.businessName ? t.accent : t.text} anchor="middle">
+        {headline}
       </Text>
-      <StarRow x={cx} y={starsY} w={44} center />
+      {isReview && <StarRow x={cx} y={starsY} w={34} center />}
 
-      {/* Área de toque: o chip NFC fica colado atrás deste quadro */}
-      <rect x={nfcX} y={boxY} width={box} height={box} rx={4} fill={t.zone} />
-      <Waves x={nfcX + (box - wavesWidth(wavesH)) / 2 + 1.5} y={boxY + (box - wavesH) / 2} h={wavesH} mono={t.wavesMono} />
-      <Qr x={qrX} y={boxY} size={box} qr={data.qr} />
+      <ScanCorners x={cx - qrSize / 2} y={qrY} size={qrSize} gap={2.4} color={t.text} />
+      <Qr x={cx - qrSize / 2} y={qrY} size={qrSize} qr={data.qr} />
 
-      <Text x={nfcX + box / 2} y={labelY} size={fitFontSize(data.copy.cta, box + 4, { max: 3.4, min: 2.4 })} color={t.text} anchor="middle">
-        {data.copy.cta}
-      </Text>
-      <Text x={qrX + box / 2} y={labelY} size={fitFontSize(data.copy.back, box + 4, { max: 3.4, min: 2.4 })} color={t.text} anchor="middle">
-        {data.copy.back}
+      {/* Área de toque: o chip NFC fica colado atrás desta faixa */}
+      <rect x={cx - pillW / 2} y={pillY} width={pillW} height={pillH} rx={pillH / 2} fill={t.zone} />
+      <Waves x={startX} y={pillY + (pillH - wavesH) / 2} h={wavesH} mono={t.wavesMono} />
+      <Text x={startX + wavesWidth(wavesH) + 2} y={pillY + pillH / 2 + labelSize * 0.36} size={labelSize} color={t.text} weight={500}>
+        {label}
       </Text>
 
-      <Identity data={data} t={t} x={cx} baseline={h - 8} maxWidth={inner} maxSize={5} minSize={3.2} logoHeight={8} anchor="middle" />
-      {data.businessName && <BrandMark x={w - CARD.safe - 1} y={h - 3.6} color={t.muted} />}
-      {t.colorBar && <ColorBar w={w} h={h} height={2} />}
     </>
   );
 }
