@@ -3,7 +3,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/lib/database.types";
 import type { MapsTarget } from "@/lib/apify-maps";
 import { apifyEnabled, scrapeMapsSync } from "@/lib/apify";
-import { analysisRequestBody, DEFAULT_OPENAI_MODEL, OPENAI_URL, parseAnalysisResponse, type Analysis } from "@/lib/google-analysis";
+import {
+  analysisRequestBody,
+  DEFAULT_OPENAI_MODEL,
+  OPENAI_URL,
+  parseAnalysisResponse,
+  type Analysis,
+  type ResponsesApiResult,
+} from "@/lib/google-analysis";
 import {
   parsePlaceProfile,
   PLACE_ID_PATTERN,
@@ -90,25 +97,35 @@ export async function fetchPlaceProfile(placeId: string): Promise<PlaceProfile |
   }
 }
 
-export async function analyzeProfile(profile: PlaceProfile): Promise<Analysis | null> {
+/**
+ * Chama a Responses API da OpenAI e devolve o JSON da resposta (sem validar o
+ * formato). null sem chave ou em caso de erro.
+ */
+export async function requestOpenAI(body: (model: string) => object, label: string): Promise<ResponsesApiResult | null> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) return null;
   try {
     const res = await fetch(OPENAI_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-      body: JSON.stringify(analysisRequestBody(profile, process.env.OPENAI_MODEL || DEFAULT_OPENAI_MODEL)),
+      body: JSON.stringify(body(process.env.OPENAI_MODEL || DEFAULT_OPENAI_MODEL)),
       cache: "no-store",
-      signal: AbortSignal.timeout(90_000),
+      signal: AbortSignal.timeout(120_000),
     });
     if (!res.ok) throw new Error(`OpenAI ${res.status}: ${await res.text()}`);
-    const analysis = parseAnalysisResponse(await res.json());
-    if (!analysis) throw new Error("OpenAI: resposta fora do formato esperado");
-    return analysis;
+    return (await res.json()) as ResponsesApiResult;
   } catch (error) {
-    console.error("Falha na análise da IA", error);
+    console.error(`Falha na ${label}`, error);
     return null;
   }
+}
+
+export async function analyzeProfile(profile: PlaceProfile): Promise<Analysis | null> {
+  const json = await requestOpenAI((model) => analysisRequestBody(profile, model), "análise da IA");
+  if (!json) return null;
+  const analysis = parseAnalysisResponse(json);
+  if (!analysis) console.error("OpenAI: resposta fora do formato esperado");
+  return analysis;
 }
 
 /** Grava uma coleta do perfil e devolve o id da linha. */

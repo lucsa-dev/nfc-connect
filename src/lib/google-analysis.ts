@@ -104,23 +104,28 @@ export function analysisRequestBody(profile: PlaceProfile, model: string, now = 
   };
 }
 
-interface ResponsesApiResult {
+export interface ResponsesApiResult {
   output?: Array<{ type?: string; content?: Array<{ type?: string; text?: string; refusal?: string }> }>;
 }
 
-/** Lê o texto JSON da resposta da Responses API e valida o formato. */
-export function parseAnalysisResponse(json: ResponsesApiResult): Analysis | null {
+/** Lê o JSON (Structured Outputs) do texto da resposta da Responses API. */
+export function responseJson(json: ResponsesApiResult): unknown {
   const text = (json.output ?? [])
     .filter((item) => item.type === "message")
     .flatMap((item) => item.content ?? [])
     .find((c) => c.type === "output_text" && c.text)?.text;
   if (!text) return null;
   try {
-    const parsed = analysisSchema.safeParse(JSON.parse(text));
-    return parsed.success ? parsed.data : null;
+    return JSON.parse(text);
   } catch {
     return null;
   }
+}
+
+/** Lê o texto JSON da resposta da Responses API e valida o formato. */
+export function parseAnalysisResponse(json: ResponsesApiResult): Analysis | null {
+  const parsed = analysisSchema.safeParse(responseJson(json));
+  return parsed.success ? parsed.data : null;
 }
 
 /** Valida uma análise salva no banco (coluna jsonb). */
