@@ -4,6 +4,7 @@ import { ChevronRightIcon, LinkIcon } from "lucide-react";
 import { BusinessFormDialog } from "@/components/dashboard/business-form-dialog";
 import { ConfirmDelete } from "@/components/dashboard/confirm-delete";
 import { GooglePanel } from "@/components/dashboard/google-panel";
+import { MarketPanel } from "@/components/market/market-panel";
 import { CopyButton } from "@/components/dashboard/copy-button";
 import { LinkFormDialog } from "@/components/dashboard/link-form-dialog";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -19,9 +20,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getBusinessWithLinks, getPlaceSnapshots } from "@/lib/data";
+import { apifyEnabled } from "@/lib/apify";
+import { getBusinessWithLinks, getPlaceSnapshots, listReports } from "@/lib/data";
 import { analysisEnabled, metricsEnabled, placesEnabled } from "@/lib/google";
 import { formatNumber } from "@/lib/format";
+import { readPlaceProfile } from "@/lib/places";
 import { LINK_TYPE_INFO } from "@/lib/link-types";
 import { buildPublicLinkUrl, getSiteUrl } from "@/lib/urls";
 import { createLink, deleteBusiness, updateBusiness } from "../actions";
@@ -38,6 +41,8 @@ export async function generateMetadata({ params }: PageProps<"/dashboard/[busine
 export default async function BusinessPage({ params }: PageProps<"/dashboard/[businessId]">) {
   const { businessId } = await params;
   const [business, snapshots] = await Promise.all([getBusinessWithLinks(businessId), getPlaceSnapshots(businessId)]);
+  const reports = business.place_id ? await listReports({ businessId, placeId: business.place_id }, 5) : [];
+  const profile = snapshots[0] ? readPlaceProfile(snapshots[0].profile) : null;
   const siteUrl = getSiteUrl();
   const host = siteUrl.replace(/^https?:\/\//, "");
 
@@ -75,6 +80,16 @@ export default async function BusinessPage({ params }: PageProps<"/dashboard/[bu
         metricsEnabled={metricsEnabled()}
         analysisEnabled={analysisEnabled()}
       />
+
+      {business.place_id && (
+        <MarketPanel
+          businessId={business.id}
+          defaultTerm={profile?.category?.toLocaleLowerCase("pt-BR") ?? ""}
+          defaultArea={[profile?.city, profile?.state].filter(Boolean).join(" - ")}
+          reports={reports}
+          enabled={apifyEnabled()}
+        />
+      )}
 
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-semibold">Links</h2>

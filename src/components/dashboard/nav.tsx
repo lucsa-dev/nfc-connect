@@ -1,11 +1,12 @@
 "use client";
 
-import { CreditCardIcon, InboxIcon, SettingsIcon, StoreIcon, TrendingUpIcon } from "lucide-react";
+import { CreditCardIcon, InboxIcon, RadarIcon, SettingsIcon, StoreIcon, TrendingUpIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const ITEMS = [
   { href: "/dashboard/pedidos", label: "Pedidos", short: "Pedidos", icon: InboxIcon },
+  { href: "/dashboard/prospeccao", label: "Prospecção", short: "Prospectar", icon: RadarIcon },
   { href: "/dashboard/cartoes", label: "Cartões", short: "Cartões", icon: CreditCardIcon },
   { href: "/dashboard/evolucao", label: "Evolução", short: "Evolução", icon: TrendingUpIcon },
   { href: "/dashboard/configuracoes", label: "Configurações", short: "Ajustes", icon: SettingsIcon },
@@ -46,7 +47,7 @@ export function BottomNav() {
       aria-label="Painel"
       className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/90 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden print:hidden"
     >
-      <div className="grid grid-cols-5">
+      <div className="grid grid-cols-6">
         {NAV.map(({ href, short, icon: Icon }) => (
           <Link
             key={href}

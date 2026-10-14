@@ -196,3 +196,55 @@ export async function listGoogleBusinesses() {
   return data;
 }
 
+// Relatórios de concorrência e prospecção -------------------------------------------
+
+/** Relatório com o mapa de ranking mais recente que ainda não expirou. */
+export async function getReport(reportId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("market_reports")
+    .select("*, rank_grids(points, size, spacing_m, created_at, expires_at)")
+    .eq("id", reportId)
+    .gt("rank_grids.expires_at", new Date().toISOString())
+    .order("created_at", { referencedTable: "rank_grids", ascending: false })
+    .limit(1, { referencedTable: "rank_grids" })
+    .maybeSingle();
+  if (error && error.code !== "22P02") throw error;
+  if (!data) notFound();
+  return data;
+}
+
+/** Relatórios de um negócio (pelo vínculo ou pelo mesmo Place ID), mais recentes primeiro. */
+export async function listReports({ businessId, placeId }: { businessId?: string; placeId?: string | null }, limit = 10) {
+  const supabase = await createClient();
+  let query = supabase
+    .from("market_reports")
+    .select("id, name, term, area, status, data, created_at, business_id")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (businessId && placeId) query = query.or(`business_id.eq.${businessId},place_id.eq.${placeId}`);
+  else if (businessId) query = query.eq("business_id", businessId);
+  else query = query.is("business_id", null);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+}
+
+export async function listProspectSearches(limit = 20) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("prospect_searches")
+    .select("id, term, area, status, created_at, results")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data.map(({ results, ...s }) => ({ ...s, count: Array.isArray(results) ? results.length : 0 }));
+}
+
+export async function getProspectSearch(searchId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("prospect_searches").select("*").eq("id", searchId).maybeSingle();
+  if (error && error.code !== "22P02") throw error;
+  if (!data) notFound();
+  return data;
+}

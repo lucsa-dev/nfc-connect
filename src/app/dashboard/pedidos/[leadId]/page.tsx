@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ExternalLinkIcon, MessageCircleIcon } from "lucide-react";
 import { LeadActions } from "@/components/dashboard/lead-actions";
+import { ReportForm } from "@/components/market/market-actions";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProduct, getStyle } from "@/lib/card";
+import { apifyEnabled } from "@/lib/apify";
 import { getLead } from "@/lib/data";
 import { formatDateTime } from "@/lib/format";
 import { LEAD_STATUS_LABEL } from "@/lib/leads";
@@ -129,6 +131,16 @@ export default async function LeadPage({ params }: PageProps<"/dashboard/pedidos
                 </a>
               )}
             </div>
+            {lead.place_id && lead.place_name && apifyEnabled() && (
+              <div className="mt-6 grid gap-2 border-t pt-4">
+                <span className="text-sm font-medium">Relatório de concorrência</span>
+                <ReportForm
+                  target={lead.business_id ? { businessId: lead.business_id } : { placeId: lead.place_id, name: lead.place_name }}
+                  defaultTerm={lead.place_category?.toLocaleLowerCase("pt-BR") ?? ""}
+                  defaultArea={[lead.place_city, lead.place_state].filter(Boolean).join(" - ")}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
