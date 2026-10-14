@@ -2,12 +2,13 @@
 
 import { CheckIcon } from "lucide-react";
 import { ArtPreview, type ArtData } from "@/components/cards/print-art";
-import { PRODUCTS, STYLES, type Product, type ProductId, type StyleId } from "@/lib/card";
+import { AVAILABLE_PRODUCTS, AVAILABLE_STYLES, type Product, type ProductId, type StyleId } from "@/lib/card";
 
 /**
  * Seletores visuais de estilo e de produto (placa/cartão), com a prévia da arte.
  * Usados no painel (lotes de peças em branco) e no quiz de vendas (/comecar).
  * Com `name`, cada opção é um rádio de formulário; sem, é só controlado.
+ * Só listam o que está à venda (AVAILABLE_*): com uma opção só, quem usa esconde o seletor.
  */
 
 function PickerOption({
@@ -60,9 +61,9 @@ export function StylePicker({
 }) {
   return (
     <div className="grid grid-cols-3 gap-2 sm:gap-3" role="radiogroup" aria-label="Estilo">
-      {STYLES.map((s) => (
+      {AVAILABLE_STYLES.map((s) => (
         <PickerOption key={s.id} compact name={name} value={s.id} checked={value === s.id} onSelect={() => onChange(s.id)} label={s.label} description={s.description}>
-          <ArtPreview product="cartao" style={s.id} data={art} className="w-full max-w-44" />
+          <ArtPreview product="placa-quadrada" style={s.id} data={art} className="h-full" />
         </PickerOption>
       ))}
     </div>
@@ -97,7 +98,7 @@ export function ProductPicker({
   kind?: Product["kind"];
   name?: string;
 }) {
-  const products = PRODUCTS.filter((p) => !kind || p.kind === kind);
+  const products = AVAILABLE_PRODUCTS.filter((p) => !kind || p.kind === kind);
   const cols = products.length > 2 ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-2";
   return (
     <div className={`grid grid-cols-1 gap-3 ${cols}`} role="radiogroup" aria-label="Modelo">

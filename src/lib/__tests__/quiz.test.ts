@@ -109,8 +109,14 @@ describe("recommendKit", () => {
     expect(kitPriceLabel(kit)).toMatch(/R\$\s?160,00/);
   });
 
-  it("mesas geram cartões sob orçamento", () => {
+  it("sem cartão à venda, mesas e atendentes recebem placas", () => {
     const kit = recommendKit({ spots: ["balcao", "mesas"], counters: 1, tables: 8 });
+    expect(kit).toEqual({ plaques: 9, cards: 0, totalCents: 72000, hasQuote: false });
+    expect(recommendKit({ spots: ["atendente"], counters: 0, tables: 3 })).toMatchObject({ plaques: 3, cards: 0 });
+  });
+
+  it("com cartão à venda, mesas geram cartões sob orçamento", () => {
+    const kit = recommendKit({ spots: ["balcao", "mesas"], counters: 1, tables: 8 }, true);
     expect(kit).toMatchObject({ plaques: 1, cards: 8, totalCents: 8000, hasQuote: true });
     expect(describeKit(kit)).toBe("1 placa + 8 cartões");
     expect(kitPriceLabel(kit)).toContain("cartões sob orçamento");
@@ -121,7 +127,7 @@ describe("recommendKit", () => {
   });
 
   it("só cartões: preço todo sob orçamento", () => {
-    const kit = recommendKit({ spots: ["atendente"], counters: 0, tables: 3 });
+    const kit = recommendKit({ spots: ["atendente"], counters: 0, tables: 3 }, true);
     expect(kit).toMatchObject({ plaques: 0, cards: 3, totalCents: 0 });
     expect(kitPriceLabel(kit)).toBe("sob orçamento");
   });

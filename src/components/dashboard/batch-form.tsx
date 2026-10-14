@@ -8,7 +8,7 @@ import type { ArtData } from "@/components/cards/print-art";
 import { useActionFeedback } from "@/components/dashboard/use-action-feedback";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getProduct, getStyle, type ProductId, type StyleId } from "@/lib/card";
+import { AVAILABLE_PRODUCTS, AVAILABLE_STYLES, getProduct, getStyle, type ProductId, type StyleId } from "@/lib/card";
 import { BATCH_MAX } from "@/lib/cards";
 
 const QUICK = [10, 25, 50, 100];
@@ -32,8 +32,13 @@ export function BatchForm({ art }: { art: ArtData }) {
   const errors = state.fieldErrors ?? {};
   const v = state.values ?? {};
   const [quantity, setQuantity] = useState(v.quantity ?? "50");
-  const [style, setStyle] = useState<StyleId>(getStyle(v.style).id);
-  const [product, setProduct] = useState<ProductId>(getProduct(v.product ?? "cartao").id);
+  const [style, setStyle] = useState<StyleId>(getStyle(v.style ?? AVAILABLE_STYLES[0].id).id);
+  const [product, setProduct] = useState<ProductId>(getProduct(v.product ?? AVAILABLE_PRODUCTS[0].id).id);
+  // Com uma opção só, o passo some e o valor vai escondido no formulário.
+  const pickStyle = AVAILABLE_STYLES.length > 1;
+  const pickProduct = AVAILABLE_PRODUCTS.length > 1;
+  const productStep = pickStyle ? 3 : 2;
+  const nameStep = productStep + (pickProduct ? 1 : 0);
 
   const n = Number(quantity);
   const step = (delta: number) => setQuantity(String(Math.min(BATCH_MAX, Math.max(1, (Number.isFinite(n) ? n : 0) + delta))));
@@ -72,15 +77,23 @@ export function BatchForm({ art }: { art: ArtData }) {
         </div>
       </Step>
 
-      <Step n={2} title="Estilo" error={errors.style?.[0]}>
-        <StylePicker name="style" value={style} onChange={setStyle} art={art} />
-      </Step>
+      {pickStyle ? (
+        <Step n={2} title="Estilo" error={errors.style?.[0]}>
+          <StylePicker name="style" value={style} onChange={setStyle} art={art} />
+        </Step>
+      ) : (
+        <input type="hidden" name="style" value={style} />
+      )}
 
-      <Step n={3} title="Produto" hint={`no estilo ${getStyle(style).label.toLowerCase()}`} error={errors.product?.[0]}>
-        <ProductPicker name="product" value={product} onChange={setProduct} style={style} art={art} />
-      </Step>
+      {pickProduct ? (
+        <Step n={productStep} title="Produto" hint={`no estilo ${getStyle(style).label.toLowerCase()}`} error={errors.product?.[0]}>
+          <ProductPicker name="product" value={product} onChange={setProduct} style={style} art={art} />
+        </Step>
+      ) : (
+        <input type="hidden" name="product" value={product} />
+      )}
 
-      <Step n={4} title="Nome do lote" hint="opcional" error={errors.name?.[0]}>
+      <Step n={nameStep} title="Nome do lote" hint="opcional" error={errors.name?.[0]}>
         <Input name="name" defaultValue={v.name ?? ""} placeholder={`Ex.: ${chosen.label} · gráfica outubro`} maxLength={120} className="max-w-md" />
       </Step>
 

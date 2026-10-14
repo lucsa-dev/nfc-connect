@@ -1,4 +1,4 @@
-import type { StyleId } from "@/lib/card";
+import { AVAILABLE_PRODUCTS, type StyleId } from "@/lib/card";
 import type { PlaceInfo } from "@/lib/places";
 import { formatBRL, PRICING } from "@/lib/pricing";
 
@@ -126,11 +126,16 @@ export interface Kit {
   hasQuote: boolean;
 }
 
-export function recommendKit(answers: Pick<QuizAnswers, "spots" | "counters" | "tables">): Kit {
+export function recommendKit(
+  answers: Pick<QuizAnswers, "spots" | "counters" | "tables">,
+  cardsForSale = AVAILABLE_PRODUCTS.some((p) => p.kind === "card"),
+): Kit {
   const wantsPlaque = answers.spots.some((s) => SPOTS.find((x) => x.id === s)?.kind === "plaque");
   const wantsCards = answers.spots.some((s) => SPOTS.find((x) => x.id === s)?.kind === "card");
+  // Sem cartão à venda, mesas e atendentes também recebem placas.
   let plaques = wantsPlaque ? Math.max(1, answers.counters) : 0;
-  const cards = wantsCards ? Math.max(1, answers.tables) : 0;
+  if (wantsCards && !cardsForSale) plaques += Math.max(1, answers.tables);
+  const cards = wantsCards && cardsForSale ? Math.max(1, answers.tables) : 0;
   if (plaques === 0 && cards === 0) plaques = 1;
 
   const cardTotal = PRICING.card === null ? 0 : cards * PRICING.card;

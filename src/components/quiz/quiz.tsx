@@ -23,7 +23,7 @@ import { canAdvance, loadState, persist, reducer, STEPS, STORAGE_KEY, type QuizS
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getProduct, getStyle } from "@/lib/card";
+import { AVAILABLE_PRODUCTS, AVAILABLE_STYLES, getProduct, getStyle, type Product } from "@/lib/card";
 import {
   CLIENT_BANDS,
   describeKit,
@@ -325,10 +325,14 @@ function StepPlan({ state, dispatch, art }: StepProps) {
         <p className="mt-0.5 text-lg font-semibold text-primary">{kitPriceLabel(kit)}</p>
         <p className="text-xs text-muted-foreground">Pagamento único, sem mensalidade.</p>
 
-        <p className="mt-5 mb-2 text-sm font-medium">Escolha o estilo</p>
-        <StylePicker value={state.style} onChange={(style) => dispatch({ type: "style", style })} art={art} />
+        {AVAILABLE_STYLES.length > 1 && (
+          <>
+            <p className="mt-5 mb-2 text-sm font-medium">Escolha o estilo</p>
+            <StylePicker value={state.style} onChange={(style) => dispatch({ type: "style", style })} art={art} />
+          </>
+        )}
 
-        {kit.plaques > 0 && (
+        {kit.plaques > 0 && pickable("plaque") && (
           <>
             <p className="mt-5 mb-2 text-sm font-medium">Modelo da placa</p>
             <ProductPicker
@@ -340,7 +344,7 @@ function StepPlan({ state, dispatch, art }: StepProps) {
             />
           </>
         )}
-        {kit.cards > 0 && (
+        {kit.cards > 0 && pickable("card") && (
           <>
             <p className="mt-5 mb-2 text-sm font-medium">Modelo do cartão</p>
             <ProductPicker
@@ -404,6 +408,9 @@ function StepContact({ state, dispatch }: StepProps & { error: string | null }) 
     </>
   );
 }
+
+/** Há mais de um modelo à venda desse tipo (senão o seletor some). */
+const pickable = (kind: Product["kind"]) => AVAILABLE_PRODUCTS.filter((p) => p.kind === kind).length > 1;
 
 /** Modelos do kit (placa e/ou cartão), na ordem de exibição. */
 function kitModels(state: QuizState, kit: ReturnType<typeof recommendKit>) {

@@ -59,9 +59,10 @@ describe("saveLead", () => {
       session_id: base.sessionId,
       status: "quiz",
       place_id: "ChIJ1",
-      plaques: 2,
-      cards: 6,
-      total_cents: 16000,
+      // Sem cartão à venda, as 6 mesas também recebem placa.
+      plaques: 8,
+      cards: 0,
+      total_cents: 64000,
       estimate: "3 a 4 meses",
       utm: { utm_source: "instagram" },
     });
@@ -69,7 +70,7 @@ describe("saveLead", () => {
 
   it("guarda o modelo só do que está no kit (padrão para quizzes antigos)", async () => {
     await saveLead({ ...base, plaqueModel: "placa-retangular", cardModel: "cartao-vertical" });
-    expect(db.upserts[0]).toMatchObject({ plaque_model: "placa-retangular", card_model: "cartao-vertical" });
+    expect(db.upserts[0]).toMatchObject({ plaque_model: "placa-retangular", card_model: null });
 
     await saveLead({ ...base, spots: ["balcao"], cardModel: "cartao-vertical" });
     expect(db.upserts[1]).toMatchObject({ plaque_model: "placa-quadrada", card_model: null });

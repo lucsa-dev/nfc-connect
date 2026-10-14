@@ -4,7 +4,7 @@ import { PrintButton } from "@/components/cards/print-button";
 import { ArtPreview } from "@/components/cards/print-art";
 import { pageCss, PrintSheets, type PrintFormat } from "@/components/cards/print-sheets";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { CARD_COPY, displayUrl, getProduct, getStyle, PRODUCTS, qrPath, STYLES } from "@/lib/card";
+import { AVAILABLE_PRODUCTS, AVAILABLE_STYLES, CARD_COPY, displayUrl, getProduct, getStyle, qrPath } from "@/lib/card";
 import { getLink } from "@/lib/data";
 import { buildPublicLinkUrl, getSiteUrl } from "@/lib/urls";
 
@@ -69,9 +69,9 @@ export default async function PrintPage({ params, searchParams }: Props) {
           actions={<PrintButton />}
         />
 
-        <h2 className="mb-3 text-sm font-medium">Produto</h2>
-        <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {PRODUCTS.map((p) => (
+        {AVAILABLE_PRODUCTS.length > 1 && <h2 className="mb-3 text-sm font-medium">Produto</h2>}
+        <div className={`mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4 ${AVAILABLE_PRODUCTS.length > 1 ? "" : "hidden"}`}>
+          {AVAILABLE_PRODUCTS.map((p) => (
             <Link
               key={p.id}
               href={href({ produto: p.id })}
@@ -96,13 +96,15 @@ export default async function PrintPage({ params, searchParams }: Props) {
         </div>
 
         <div className="mb-2 flex flex-wrap items-center gap-4">
-          <div className="flex max-w-full overflow-x-auto rounded-lg bg-muted p-0.5" role="group" aria-label="Estilo">
-            {STYLES.map((s) => (
-              <Chip key={s.id} href={href({ estilo: s.id })} active={s.id === style.id}>
-                {s.label}
-              </Chip>
-            ))}
-          </div>
+          {AVAILABLE_STYLES.length > 1 && (
+            <div className="flex max-w-full overflow-x-auto rounded-lg bg-muted p-0.5" role="group" aria-label="Estilo">
+              {AVAILABLE_STYLES.map((s) => (
+                <Chip key={s.id} href={href({ estilo: s.id })} active={s.id === style.id}>
+                  {s.label}
+                </Chip>
+              ))}
+            </div>
+          )}
           <div className="flex max-w-full overflow-x-auto rounded-lg bg-muted p-0.5" role="group" aria-label="Formato">
             <Chip href={href({ formato: "grafica" })} active={format === "grafica"}>Gráfica (PDF)</Chip>
             <Chip href={href({ formato: "a4" })} active={format === "a4"}>Folha A4</Chip>

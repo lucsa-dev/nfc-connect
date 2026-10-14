@@ -1,4 +1,4 @@
-import type { StyleId } from "@/lib/card";
+import { getProduct, getStyle, type StyleId } from "@/lib/card";
 import type { PlaceInfo } from "@/lib/places";
 import { goalOptions, normalizeBrPhone, type CardModel, type ClientBandId, type PlaqueModel, type QuizAnswers, type SpotId } from "@/lib/quiz";
 
@@ -92,7 +92,10 @@ export function loadState(search: string): QuizState {
     // A tela de cálculo não faz sentido ao voltar: retoma no plano.
     const step = STEPS[saved.step] === "calculando" ? STEPS.indexOf("plano") : saved.step;
     const maxStep = Math.max(step, typeof saved.maxStep === "number" ? saved.maxStep : step);
-    return { ...fresh, ...saved, step, maxStep, utm: Object.keys(fresh.utm).length ? fresh.utm : saved.utm };
+    // Estilo ou modelo que saiu de linha volta para o padrão.
+    const style = getStyle(saved.style).available ? saved.style : fresh.style;
+    const plaqueModel = getProduct(saved.plaqueModel).available ? saved.plaqueModel : fresh.plaqueModel;
+    return { ...fresh, ...saved, style, plaqueModel, step, maxStep, utm: Object.keys(fresh.utm).length ? fresh.utm : saved.utm };
   } catch {
     return fresh;
   }

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { ActionState } from "@/lib/action-state";
-import { PRODUCTS, STYLES } from "@/lib/card";
+import { AVAILABLE_PRODUCTS, AVAILABLE_STYLES, PRODUCTS } from "@/lib/card";
 import { BATCH_MAX, generateCode } from "@/lib/cards";
 import { createClient } from "@/lib/supabase/server";
 import { fieldErrorsOf, formDataToObject } from "@/lib/validation";
@@ -23,8 +23,8 @@ const batchSchema = z.object({
     .int("Use um número inteiro")
     .min(1, "Mínimo 1")
     .max(BATCH_MAX, `Máximo ${BATCH_MAX} por lote`),
-  product: z.enum(PRODUCTS.map((p) => p.id) as [string, ...string[]], { error: "Escolha o produto" }),
-  style: z.enum(STYLES.map((s) => s.id) as [string, ...string[]], { error: "Escolha o estilo" }),
+  product: z.enum(AVAILABLE_PRODUCTS.map((p) => p.id) as [string, ...string[]], { error: "Escolha o produto" }),
+  style: z.enum(AVAILABLE_STYLES.map((s) => s.id) as [string, ...string[]], { error: "Escolha o estilo" }),
 });
 
 /** Gera um lote de peças em branco, cada uma com seu código. */

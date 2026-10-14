@@ -26,6 +26,7 @@ export const PRODUCTS = [
     height: 100,
     radius: 4,
     sides: ["front"],
+    available: true,
   },
   {
     id: "placa-retangular",
@@ -36,6 +37,7 @@ export const PRODUCTS = [
     height: 150,
     radius: 4,
     sides: ["front"],
+    available: false,
   },
   {
     id: "cartao",
@@ -46,6 +48,7 @@ export const PRODUCTS = [
     height: 54,
     radius: 3.18,
     sides: ["front", "back"],
+    available: false,
   },
   {
     id: "cartao-vertical",
@@ -56,6 +59,7 @@ export const PRODUCTS = [
     height: 85.6,
     radius: 3.18,
     sides: ["front", "back"],
+    available: false,
   },
 ] as const satisfies ReadonlyArray<{
   id: string;
@@ -66,10 +70,15 @@ export const PRODUCTS = [
   height: number;
   radius: number;
   sides: readonly Side[];
+  /** false: fora de linha. Some dos seletores, mas peças já criadas continuam funcionando. */
+  available: boolean;
 }>;
 
 export type Product = (typeof PRODUCTS)[number];
 export type ProductId = Product["id"];
+
+/** Produtos à venda agora (por enquanto, só a placa 10 × 10 cm). */
+export const AVAILABLE_PRODUCTS: readonly Product[] = PRODUCTS.filter((p) => p.available);
 
 export function getProduct(id: string | null | undefined): Product {
   return PRODUCTS.find((p) => p.id === id) ?? PRODUCTS[0];
@@ -80,12 +89,15 @@ export function productSize(product: { width: number; height: number }) {
   return { width, height, fullWidth: width + CARD.bleed * 2, fullHeight: height + CARD.bleed * 2 };
 }
 
-/** Estilos de cor, válidos para todos os produtos. */
+/** Estilos de cor, válidos para todos os produtos. `available` como em PRODUCTS. */
 export const STYLES = [
-  { id: "classico", label: "Clássico", description: "Fundo branco, cores da marca" },
-  { id: "escuro", label: "Escuro", description: "Fundo grafite, elegante" },
-  { id: "azul", label: "Azul", description: "Fundo azul, alto destaque" },
+  { id: "classico", label: "Branco", description: "Fundo branco, cores do Google", available: true },
+  { id: "escuro", label: "Escuro", description: "Fundo grafite, elegante", available: false },
+  { id: "azul", label: "Azul", description: "Fundo azul, alto destaque", available: false },
 ] as const;
+
+/** Estilos à venda agora (por enquanto, só o branco). */
+export const AVAILABLE_STYLES: ReadonlyArray<(typeof STYLES)[number]> = STYLES.filter((s) => s.available);
 
 export type StyleId = (typeof STYLES)[number]["id"];
 
