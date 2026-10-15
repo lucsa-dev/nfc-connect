@@ -1,5 +1,5 @@
 import { competitorFromProfile, estimatePace, type Competitor } from "@/lib/market";
-import { readLatLng, type PlaceProfile } from "@/lib/places";
+import { readLatLng, type LatLng, type PlaceProfile } from "@/lib/places";
 
 /**
  * Google Maps Scraper da Apify (compass/crawler-google-places): montagem da
@@ -50,6 +50,7 @@ export interface ApifyPlaceItem {
   categoryName?: string;
   categories?: string[];
   address?: string;
+  neighborhood?: string | null;
   city?: string;
   state?: string;
   totalScore?: number | null;
@@ -228,6 +229,48 @@ export function prospectActorInput(term: string, area: string) {
   };
 }
 
+// Perto de mim -------------------------------------------------------------------
+
+/** Rótulo da busca "perto de mim" sem tipo de negócio escolhido. */
+export const NEARBY_ALL = "comércios locais";
+
+/** Tipos de negócio que mais dependem de avaliação no Google (busca sem tipo escolhido). */
+export const NEARBY_TERMS = [
+  "restaurante",
+  "lanchonete",
+  "padaria",
+  "pizzaria",
+  "cafeteria",
+  "salão de beleza",
+  "barbearia",
+  "pet shop",
+  "oficina mecânica",
+  "academia",
+  "clínica",
+  "loja",
+] as const;
+
+/** Por termo: com todos os tipos, poucos de cada para a busca não demorar. */
+export const NEARBY_PLACES_PER_TERM = 5;
+
+/** Busca num círculo ao redor do vendedor (customGeolocation do scraper). */
+export function nearbyActorInput(term: string | null, center: LatLng, radiusM: number) {
+  const terms = term ? [term] : [...NEARBY_TERMS];
+  return {
+    searchStringsArray: terms,
+    customGeolocation: { type: "Point", coordinates: [center.lng, center.lat], radiusKm: radiusM / 1000 },
+    maxCrawledPlacesPerSearch: term ? PROSPECT_PLACES : NEARBY_PLACES_PER_TERM,
+    language: "pt-BR",
+    countryCode: "br",
+    maxReviews: PROSPECT_REVIEWS,
+    reviewsSort: "newest",
+    scrapeReviewsPersonalData: false,
+    scrapePlaceDetailPage: false,
+    maxImages: 0,
+    scrapeContacts: false,
+  };
+}
+
 /** Item do scraper como Competitor (todas as avaliações coletadas, não só 8). */
 export function parseCompetitor(item: ApifyPlaceItem, now = new Date()): (Competitor & { closed: boolean }) | null {
   const profile = parseApifyPlace(item);
@@ -239,8 +282,10 @@ export function parseCompetitor(item: ApifyPlaceItem, now = new Date()): (Compet
     text: r.text?.trim().slice(0, 400) || null,
   }));
   const base = competitorFromProfile(profile, typeof item.rank === "number" ? item.rank : null, now);
+  const area = [item.neighborhood, item.city].filter(Boolean).join(", ");
   return {
     ...base,
+    area: area || null,
     recent,
     pace: estimatePace(recent.map((r) => r.date), base.reviews, now),
     closed: profile.businessStatus !== "OPERATIONAL",

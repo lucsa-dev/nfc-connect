@@ -1,10 +1,16 @@
 "use client";
 
-import { Loader2Icon, MapIcon, SearchIcon, SendIcon } from "lucide-react";
+import { Loader2Icon, LocateFixedIcon, MapIcon, SearchIcon, SendIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { createProspectSearch, createRankGrid, createReport, type ReportTarget } from "@/app/dashboard/relatorios/actions";
+import {
+  createNearbyProspectSearch,
+  createProspectSearch,
+  createRankGrid,
+  createReport,
+  type ReportTarget,
+} from "@/app/dashboard/relatorios/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -86,15 +92,103 @@ export function ProspectForm() {
   const [pending, run] = useRun();
   return (
     <form
-      className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+      className="grid gap-3"
       onSubmit={(e) => {
         e.preventDefault();
         run(() => createProspectSearch({ term, area }));
       }}
     >
       <SearchFields idPrefix="prospect" term={term} area={area} onTerm={setTerm} onArea={setArea} />
-      <Button type="submit" disabled={pending || term.trim().length < 2 || area.trim().length < 2}>
+      <Button type="submit" className="w-full sm:w-fit" disabled={pending || term.trim().length < 2 || area.trim().length < 2}>
         {pending ? <Loader2Icon className="animate-spin" /> : <SearchIcon />} Buscar negócios
+      </Button>
+    </form>
+  );
+}
+
+export const NEARBY_RADII = [500, 1000, 2000, 5000] as const;
+
+const radiusLabel = (m: number) => (m < 1000 ? `${m} m` : `${m / 1000} km`);
+
+/** Lê a posição atual do aparelho (pede permissão ao navegador). */
+function currentPosition(): Promise<GeolocationPosition> {
+  return new Promise((resolve, reject) => {
+    if (!("geolocation" in navigator)) return reject(new Error("Este navegador não informa a localização."));
+    navigator.geolocation.getCurrentPosition(resolve, (error) => {
+      reject(
+        new Error(
+          error.code === error.PERMISSION_DENIED
+            ? "Permita o acesso à localização no navegador para buscar perto de você."
+            : "Não foi possível obter sua localização. Tente de novo em um lugar aberto.",
+        ),
+      );
+    }, { enableHighAccuracy: true, timeout: 20_000, maximumAge: 60_000 });
+  });
+}
+
+/** Prospecção ao redor de onde o vendedor está agora. */
+export function NearbyProspectForm() {
+  const [term, setTerm] = useState("");
+  const [radius, setRadius] = useState<number>(1000);
+  const [locating, setLocating] = useState(false);
+  const [pending, run] = useRun();
+  const busy = locating || pending;
+
+  async function search() {
+    setLocating(true);
+    let position: GeolocationPosition;
+    try {
+      position = await currentPosition();
+    } catch (error) {
+      toast.error((error as Error).message);
+      return;
+    } finally {
+      setLocating(false);
+    }
+    const { latitude: lat, longitude: lng } = position.coords;
+    run(() => createNearbyProspectSearch({ lat, lng, radiusM: radius, term }));
+  }
+
+  return (
+    <form
+      className="grid gap-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void search();
+      }}
+    >
+      <div className="grid gap-1.5">
+        <span className="text-sm font-medium" id="nearby-radius">
+          Distância
+        </span>
+        <div className="flex w-fit rounded-lg bg-muted p-0.5" role="radiogroup" aria-labelledby="nearby-radius">
+          {NEARBY_RADII.map((r) => (
+            <button
+              key={r}
+              type="button"
+              role="radio"
+              aria-checked={radius === r}
+              onClick={() => setRadius(r)}
+              className="rounded-md px-3 py-1.5 text-sm text-muted-foreground aria-checked:bg-background aria-checked:text-foreground aria-checked:shadow-sm"
+            >
+              {radiusLabel(r)}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="nearby-term">Tipo de negócio (opcional)</Label>
+        <Input
+          id="nearby-term"
+          value={term}
+          onChange={(e) => setTerm(e.target.value)}
+          placeholder="Em branco: restaurantes, salões, oficinas, lojas..."
+          maxLength={80}
+        />
+      </div>
+      <Button type="submit" className="w-full sm:w-fit" disabled={busy}>
+        {busy ? <Loader2Icon className="animate-spin" /> : <LocateFixedIcon />}
+        {locating ? "Pegando sua localização..." : pending ? "Iniciando a busca..." : "Buscar perto de mim"}
       </Button>
     </form>
   );

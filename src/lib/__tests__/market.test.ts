@@ -1,9 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { marketActorInput, marketQuery, parseCompetitor, splitMarketItems, type ApifyPlaceItem } from "@/lib/apify-maps";
+import {
+  marketActorInput,
+  marketQuery,
+  NEARBY_PLACES_PER_TERM,
+  NEARBY_TERMS,
+  nearbyActorInput,
+  parseCompetitor,
+  splitMarketItems,
+  type ApifyPlaceItem,
+} from "@/lib/apify-maps";
 import {
   catchUpTargets,
+  distanceMeters,
   estimatePace,
   fiveStarsToReach,
+  formatDistance,
   formatMonths,
   hoursInsights,
   monthsToCatchUp,
@@ -281,5 +292,32 @@ describe("leitura e IA", () => {
     const input = marketAnalysisInput(data);
     expect(input).toContain('"numero": 1');
     expect(input).toContain("padaria em Aldeota, Fortaleza");
+  });
+});
+
+describe("perto de mim", () => {
+  it("busca num círculo ao redor do vendedor, com todos os tipos quando não há termo", () => {
+    const all = nearbyActorInput(null, { lat: -3.73, lng: -38.52 }, 1000);
+    expect(all.customGeolocation).toEqual({ type: "Point", coordinates: [-38.52, -3.73], radiusKm: 1 });
+    expect(all.searchStringsArray).toEqual([...NEARBY_TERMS]);
+    expect(all.maxCrawledPlacesPerSearch).toBe(NEARBY_PLACES_PER_TERM);
+    expect(nearbyActorInput("barbearia", { lat: 0, lng: 0 }, 500).searchStringsArray).toEqual(["barbearia"]);
+  });
+
+  it("mede e formata a distância", () => {
+    // 0,01° de latitude ≈ 1,1 km
+    expect(distanceMeters({ lat: -3.73, lng: -38.52 }, { lat: -3.72, lng: -38.52 })).toBeCloseTo(1112, -1);
+    expect(formatDistance(347)).toBe("350 m");
+    expect(formatDistance(1234)).toBe("1,2 km");
+  });
+
+  it("lê o bairro e a cidade do negócio", () => {
+    const c = parseCompetitor({ title: "Bar", placeId: "ChIJbar", neighborhood: "Aldeota", city: "Fortaleza" }, now)!;
+    expect(c.area).toBe("Aldeota, Fortaleza");
+  });
+
+  it("conta a apresentação do perfil na nota de oportunidade", () => {
+    const { reasons } = opportunityScore(competitor({ website: false, description: false, hours: [], photos: 2 }), 200);
+    expect(reasons).toContain("Perfil sem site, horário, fotos, descrição");
   });
 });

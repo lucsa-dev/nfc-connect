@@ -27,6 +27,8 @@ export interface Competitor {
   reviews: number;
   category: string | null;
   address: string | null;
+  /** Bairro e cidade ("Aldeota, Fortaleza"), para a busca do relatório. */
+  area?: string | null;
   mapsUrl: string | null;
   location: LatLng | null;
   website: boolean;
@@ -340,6 +342,22 @@ export interface Prospect extends Competitor {
   closed: boolean;
   score: number;
   reasons: string[];
+  /** Distância até o vendedor, na busca "perto de mim". */
+  distanceM?: number | null;
+}
+
+/** Distância em metros entre dois pontos (haversine). */
+export function distanceMeters(a: LatLng, b: LatLng): number {
+  const rad = (d: number) => (d * Math.PI) / 180;
+  const dLat = rad(b.lat - a.lat);
+  const dLng = rad(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return Math.round(2 * 6_371_000 * Math.asin(Math.sqrt(h)));
+}
+
+/** "350 m", "1,2 km". */
+export function formatDistance(m: number): string {
+  return m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} km`;
 }
 
 /**
@@ -348,7 +366,8 @@ export interface Prospect extends Competitor {
  * responde e perfil incompleto somam pontos.
  */
 export function opportunityScore(
-  p: Pick<Competitor, "rating" | "reviews" | "pace" | "replies" | "website" | "hours" | "photos"> & { closed?: boolean },
+  p: Pick<Competitor, "rating" | "reviews" | "pace" | "replies" | "website" | "hours" | "photos"> &
+    Partial<Pick<Competitor, "description">> & { closed?: boolean },
   areaMedianReviews: number | null,
 ): { score: number; reasons: string[] } {
   if (p.closed) return { score: 0, reasons: ["Fechado"] };
@@ -388,12 +407,15 @@ export function opportunityScore(
     reasons.push("Não responde as avaliações");
   }
 
-  let missing = 0;
-  if (!p.website) missing++;
-  if (p.hours.length === 0) missing++;
-  if (p.photos < 10) missing++;
-  score += missing * 5;
-  if (missing >= 2) reasons.push("Perfil incompleto");
+  // Apresentação do perfil (SEO do Perfil da Empresa no Google).
+  const missing = [
+    !p.website && "site",
+    p.hours.length === 0 && "horário",
+    p.photos < 10 && "fotos",
+    p.description === false && "descrição",
+  ].filter((m): m is string => Boolean(m));
+  score += Math.min(missing.length, 3) * 5;
+  if (missing.length >= 2) reasons.push(`Perfil sem ${missing.join(", ")}`);
 
   // Quem já tem muitas avaliações precisa menos da placa.
   if (p.reviews >= 1000) score = Math.round(score * 0.5);
@@ -401,7 +423,7 @@ export function opportunityScore(
 }
 
 /** Pontua e ordena os negócios encontrados na prospecção. */
-export function rankProspects(items: Array<Competitor & { closed: boolean }>): Prospect[] {
+export function rankProspects(items: Array<Competitor & { closed: boolean; distanceM?: number | null }>): Prospect[] {
   const med = median(items.filter((i) => !i.closed).map((i) => i.reviews));
   return items
     .map((i) => ({ ...i, ...opportunityScore(i, med) }))

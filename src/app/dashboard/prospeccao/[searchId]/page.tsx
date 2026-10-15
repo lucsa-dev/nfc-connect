@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ExternalLinkIcon } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { ProspectReportButton, RunPoller } from "@/components/market/market-actions";
@@ -7,7 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getProspectSearch } from "@/lib/data";
 import { formatDateTime, formatNumber } from "@/lib/format";
-import { readProspects, type Prospect } from "@/lib/market";
+import { NEARBY_ALL } from "@/lib/apify-maps";
+import { formatDistance, readProspects, type Prospect } from "@/lib/market";
 import { checkProspect } from "../../relatorios/actions";
 
 export const metadata: Metadata = { title: "Prospecção" };
@@ -33,23 +35,57 @@ function MapsLink({ p }: { p: Prospect }) {
   );
 }
 
-export default async function ProspectSearchPage({ params }: PageProps<"/dashboard/prospeccao/[searchId]">) {
+/**
+ * Busca do relatório de um negócio achado: na busca "perto de mim" a região é o
+ * bairro dele, e sem tipo escolhido o termo é a categoria dele no Google.
+ */
+function reportSearch(p: Prospect, search: { term: string; area: string; center_lat: number | null }) {
+  if (search.center_lat === null) return { term: search.term, area: search.area };
+  const term = search.term === NEARBY_ALL ? (p.category?.toLocaleLowerCase("pt-BR") ?? "comércio") : search.term;
+  const area = p.area ?? p.address?.split(" - ").slice(-2, -1)[0]?.trim() ?? "";
+  return { term, area };
+}
+
+const SORTS = [
+  { id: "oportunidade", label: "Oportunidade" },
+  { id: "distancia", label: "Mais perto" },
+] as const;
+
+export default async function ProspectSearchPage({ params, searchParams }: PageProps<"/dashboard/prospeccao/[searchId]">) {
   const { searchId } = await params;
   const search = await getProspectSearch(searchId);
+  const nearby = search.center_lat !== null;
+  const byDistance = nearby && (await searchParams).ordem === "distancia";
   const prospects = readProspects(search.results).filter((p) => !p.closed);
+  if (byDistance) prospects.sort((a, b) => (a.distanceM ?? Infinity) - (b.distanceM ?? Infinity));
 
   return (
     <>
       <PageHeader
         breadcrumbs={[{ href: "/dashboard/prospeccao", label: "Prospecção" }]}
-        title={`${search.term} em ${search.area}`}
-        description={`Busca de ${formatDateTime(search.created_at)}. Ordenado pela nota de oportunidade.`}
+        title={nearby ? `${search.term[0]!.toUpperCase()}${search.term.slice(1)} ${search.area}` : `${search.term} em ${search.area}`}
+        description={`Busca de ${formatDateTime(search.created_at)}. ${byDistance ? "Do mais perto para o mais longe." : "Ordenado pela nota de oportunidade."}`}
       />
 
       {search.status === "running" && (
         <RunPoller check={checkProspect.bind(null, search.id)} message="Buscando os negócios no Google Maps. Leva de 1 a 4 minutos." />
       )}
       {search.status === "failed" && <p className="text-sm text-destructive">{search.error ?? "A busca falhou."}</p>}
+
+      {search.status === "ready" && nearby && prospects.length > 1 && (
+        <div className="mb-4 flex w-fit rounded-lg bg-muted p-0.5" role="group" aria-label="Ordenar">
+          {SORTS.map((o) => (
+            <Link
+              key={o.id}
+              href={`/dashboard/prospeccao/${search.id}${o.id === "distancia" ? "?ordem=distancia" : ""}`}
+              aria-current={(o.id === "distancia") === byDistance ? "page" : undefined}
+              className="rounded-md px-3 py-1.5 text-sm text-muted-foreground aria-[current=page]:bg-background aria-[current=page]:text-foreground aria-[current=page]:shadow-sm"
+            >
+              {o.label}
+            </Link>
+          ))}
+        </div>
+      )}
 
       {search.status === "ready" &&
         (prospects.length === 0 ? (
@@ -65,14 +101,22 @@ export default async function ProspectSearchPage({ params }: PageProps<"/dashboa
                     <span className="min-w-0">
                       <span className="block font-medium break-words">{p.name}</span>
                       <span className="text-xs text-muted-foreground">
-                        {p.rating !== null ? `${decimal(p.rating)} ★` : "sem nota"} · {formatNumber(p.reviews)} avaliações · {decimal(p.pace)}/mês
+                        {[
+                          p.distanceM != null && formatDistance(p.distanceM),
+                          p.category,
+                          p.rating !== null ? `${decimal(p.rating)} ★` : "sem nota",
+                          `${formatNumber(p.reviews)} avaliações`,
+                          `${decimal(p.pace)}/mês`,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </span>
                     </span>
                     <ScoreBadge score={p.score} />
                   </div>
                   {p.reasons.length > 0 && <p className="text-xs text-muted-foreground">{p.reasons.join(" · ")}</p>}
                   <div className="flex items-center gap-3">
-                    <ProspectReportButton placeId={p.placeId} name={p.name} term={search.term} area={search.area} />
+                    <ProspectReportButton placeId={p.placeId} name={p.name} {...reportSearch(p, search)} />
                     <MapsLink p={p} />
                   </div>
                 </li>
@@ -83,7 +127,7 @@ export default async function ProspectSearchPage({ params }: PageProps<"/dashboa
                 <TableRow>
                   <TableHead>Oportunidade</TableHead>
                   <TableHead>Negócio</TableHead>
-                  <TableHead className="text-right">Pos.</TableHead>
+                  <TableHead className="text-right">{nearby ? "Distância" : "Pos."}</TableHead>
                   <TableHead className="text-right">Nota</TableHead>
                   <TableHead className="text-right">Avaliações</TableHead>
                   <TableHead className="text-right">Novas/mês</TableHead>
@@ -100,16 +144,19 @@ export default async function ProspectSearchPage({ params }: PageProps<"/dashboa
                     </TableCell>
                     <TableCell className="max-w-[22rem] whitespace-normal">
                       <span className="block font-medium">{p.name}</span>
+                      {p.category && <span className="block text-xs text-muted-foreground">{p.category}</span>}
                       {p.reasons.length > 0 && <span className="block text-xs text-muted-foreground">{p.reasons.join(" · ")}</span>}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">{p.rank ? `${p.rank}º` : "—"}</TableCell>
+                    <TableCell className="text-right whitespace-nowrap tabular-nums">
+                      {nearby ? (p.distanceM != null ? formatDistance(p.distanceM) : "—") : p.rank ? `${p.rank}º` : "—"}
+                    </TableCell>
                     <TableCell className="text-right tabular-nums">{p.rating !== null ? decimal(p.rating) : "—"}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatNumber(p.reviews)}</TableCell>
                     <TableCell className="text-right tabular-nums">{decimal(p.pace)}</TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-3">
                         <MapsLink p={p} />
-                        <ProspectReportButton placeId={p.placeId} name={p.name} term={search.term} area={search.area} />
+                        <ProspectReportButton placeId={p.placeId} name={p.name} {...reportSearch(p, search)} />
                       </div>
                     </TableCell>
                   </TableRow>

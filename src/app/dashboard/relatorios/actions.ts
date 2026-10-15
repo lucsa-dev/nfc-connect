@@ -94,9 +94,34 @@ export async function createProspectSearch(input: { term: string; area: string }
   const supabase = await requireUser();
   let searchId: string;
   try {
-    searchId = await startProspect(supabase, parsed.data.term, parsed.data.area);
+    searchId = await startProspect(supabase, parsed.data);
   } catch (error) {
     console.error("Falha ao iniciar a prospecção", error);
+    return { message: "Não foi possível iniciar a busca no Google Maps. Tente de novo." };
+  }
+  redirect(`/dashboard/prospeccao/${searchId}`);
+}
+
+const nearbySchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+  radiusM: z.number().int().min(300).max(5000),
+  term: z.string().trim().max(80),
+});
+
+/** Prospecção ao redor da localização atual do vendedor (pega pelo navegador). */
+export async function createNearbyProspectSearch(input: { lat: number; lng: number; radiusM: number; term: string }): Promise<ActionState> {
+  if (!apifyEnabled()) return { message: "Configure a variável APIFY_TOKEN para buscar negócios." };
+  const parsed = nearbySchema.safeParse(input);
+  if (!parsed.success) return { message: "Localização inválida. Tente de novo." };
+  const { lat, lng, radiusM, term } = parsed.data;
+  if (term && term.length < 2) return { message: "Digite o tipo de negócio ou deixe em branco." };
+  const supabase = await requireUser();
+  let searchId: string;
+  try {
+    searchId = await startProspect(supabase, { term: term || null, center: { lat, lng }, radiusM });
+  } catch (error) {
+    console.error("Falha ao iniciar a prospecção perto de você", error);
     return { message: "Não foi possível iniciar a busca no Google Maps. Tente de novo." };
   }
   redirect(`/dashboard/prospeccao/${searchId}`);

@@ -1,13 +1,21 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/lib/database.types";
-import { marketActorInput, parseCompetitor, prospectActorInput, splitMarketItems } from "@/lib/apify-maps";
+import { marketActorInput, NEARBY_ALL, nearbyActorInput, parseCompetitor, prospectActorInput, splitMarketItems } from "@/lib/apify-maps";
 import { getDatasetItems, getRun, startRun } from "@/lib/apify";
 import { notExpired } from "@/lib/data";
 import { analysisEnabled, requestOpenAI } from "@/lib/google";
 import { responseJson } from "@/lib/google-analysis";
 import { computeGrowth } from "@/lib/growth";
-import { competitorFromProfile, rankProspects, readMarketData, type Competitor, type MarketData } from "@/lib/market";
+import {
+  competitorFromProfile,
+  distanceMeters,
+  formatDistance,
+  rankProspects,
+  readMarketData,
+  type Competitor,
+  type MarketData,
+} from "@/lib/market";
 import { marketAnalysisRequestBody, readMarketAnalysis, type MarketAnalysis } from "@/lib/market-analysis";
 import { PLACE_ID_PATTERN, PLACES_BASE, readPlaceProfile, type LatLng } from "@/lib/places";
 import {
@@ -280,12 +288,36 @@ export async function runRankGrid(supabase: Client, reportId: string): Promise<{
 
 // Prospecção -----------------------------------------------------------------------------
 
-export async function startProspect(supabase: Client, term: string, area: string): Promise<string> {
-  const runId = await startRun(prospectActorInput(term, area));
-  const { data, error } = await supabase.from("prospect_searches").insert({ term, area, run_id: runId }).select("id").single();
+export type ProspectInput =
+  | { term: string; area: string }
+  /** Perto de mim: term null busca os tipos de NEARBY_TERMS. */
+  | { term: string | null; center: LatLng; radiusM: number };
+
+export async function startProspect(supabase: Client, input: ProspectInput): Promise<string> {
+  const nearby = "center" in input;
+  const runId = await startRun(nearby ? nearbyActorInput(input.term, input.center, input.radiusM) : prospectActorInput(input.term, input.area));
+  const { data, error } = await supabase
+    .from("prospect_searches")
+    .insert(
+      nearby
+        ? {
+            term: input.term ?? NEARBY_ALL,
+            area: `até ${formatDistance(input.radiusM)} de você`,
+            center_lat: input.center.lat,
+            center_lng: input.center.lng,
+            radius_m: input.radiusM,
+            run_id: runId,
+          }
+        : { term: input.term, area: input.area, run_id: runId },
+    )
+    .select("id")
+    .single();
   if (error) throw error;
   return data.id;
 }
+
+/** O scraper pode trazer lugares um pouco fora do círculo; aceita até 50% a mais. */
+const NEARBY_SLACK = 1.5;
 
 export async function syncProspect(supabase: Client, searchId: string): Promise<Status> {
   const { data: search, error } = await supabase.from("prospect_searches").select("*").eq("id", searchId).maybeSingle();
@@ -312,8 +344,12 @@ export async function syncProspect(supabase: Client, searchId: string): Promise<
   const found = (await getDatasetItems(run.datasetId))
     .map((item) => parseCompetitor(item, now))
     .filter((c): c is NonNullable<typeof c> => c !== null && !seen.has(c.placeId) && Boolean(seen.add(c.placeId)));
+  const center = search.center_lat !== null && search.center_lng !== null ? { lat: search.center_lat, lng: search.center_lng } : null;
+  const near = found
+    .map((c) => ({ ...c, distanceM: center && c.location ? distanceMeters(center, c.location) : null }))
+    .filter((c) => !center || !search.radius_m || c.distanceM === null || c.distanceM <= search.radius_m * NEARBY_SLACK);
   // Os textos das avaliações não são usados na lista: guarda só datas e estrelas.
-  const prospects = rankProspects(found).map((p) => ({ ...p, recent: p.recent.map((r) => ({ ...r, text: null })) }));
+  const prospects = rankProspects(near).map((p) => ({ ...p, recent: p.recent.map((r) => ({ ...r, text: null })) }));
   await finish({ status: "ready", results: prospects as unknown as Json });
   return "ready";
 }

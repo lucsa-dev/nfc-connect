@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRightIcon } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { ProspectForm } from "@/components/market/market-actions";
+import { NearbyProspectForm, ProspectForm } from "@/components/market/market-actions";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apifyEnabled } from "@/lib/apify";
@@ -21,21 +21,36 @@ export default async function ProspectingPage() {
     <>
       <PageHeader
         title="Prospecção"
-        description="Ache no Google Maps os negócios de uma região que mais ganham com a placa e gere o relatório antes da visita."
+        description="Ache no Google Maps os negócios que mais ganham com a placa, perto de você ou numa região, e gere o relatório antes da visita."
       />
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Nova busca</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Coleta até 40 negócios da busca e ordena pela nota de oportunidade: nota boa com poucas avaliações, ritmo baixo, dono que
-            não responde e perfil incompleto. Leva de 1 a 4 minutos.
-          </p>
-        </CardHeader>
-        <CardContent>
-          {apifyEnabled() ? <ProspectForm /> : <p className="text-sm text-muted-foreground">Configure a variável APIFY_TOKEN para buscar negócios.</p>}
-        </CardContent>
-      </Card>
+      <div className="mb-6 grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Perto de mim</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Usa a localização do seu celular para achar, ao seu redor, os negócios que mais precisam de avaliações e de um perfil
+              melhor no Google. Leva de 1 a 4 minutos.
+            </p>
+          </CardHeader>
+          <CardContent>
+            {apifyEnabled() ? <NearbyProspectForm /> : <p className="text-sm text-muted-foreground">Configure a variável APIFY_TOKEN para buscar negócios.</p>}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Por região</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Coleta até 40 negócios de “tipo em bairro ou cidade” e ordena pela nota de oportunidade: nota boa com poucas
+              avaliações, ritmo baixo, dono que não responde e perfil incompleto. Leva de 1 a 4 minutos.
+            </p>
+          </CardHeader>
+          <CardContent>
+            {apifyEnabled() ? <ProspectForm /> : <p className="text-sm text-muted-foreground">Configure a variável APIFY_TOKEN para buscar negócios.</p>}
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="grid content-start gap-3">
