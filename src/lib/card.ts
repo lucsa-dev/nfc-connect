@@ -117,8 +117,8 @@ export interface CardCopy {
 /** Textos do cartão conforme o produto. */
 export const CARD_COPY: Record<LinkType, CardCopy> = {
   review: {
-    headline: "Gostou? Avalie a gente!",
-    subline: "Sua avaliação no Google",
+    headline: "Avalie sua experiência",
+    subline: "Sua opinião no Google",
     cta: "Aproxime o celular",
     back: "Escaneie para avaliar",
   },
