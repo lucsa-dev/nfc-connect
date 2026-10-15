@@ -536,11 +536,14 @@ export type Database = {
       prospect_searches: {
         Row: {
           area: string
+          center_lat: number | null
+          center_lng: number | null
           created_at: string
           error: string | null
           finished_at: string | null
           id: string
           owner_id: string
+          radius_m: number | null
           results: Json
           run_id: string | null
           status: string
@@ -548,11 +551,14 @@ export type Database = {
         }
         Insert: {
           area: string
+          center_lat?: number | null
+          center_lng?: number | null
           created_at?: string
           error?: string | null
           finished_at?: string | null
           id?: string
           owner_id?: string
+          radius_m?: number | null
           results?: Json
           run_id?: string | null
           status?: string
@@ -560,11 +566,14 @@ export type Database = {
         }
         Update: {
           area?: string
+          center_lat?: number | null
+          center_lng?: number | null
           created_at?: string
           error?: string | null
           finished_at?: string | null
           id?: string
           owner_id?: string
+          radius_m?: number | null
           results?: Json
           run_id?: string | null
           status?: string
