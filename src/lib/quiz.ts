@@ -1,14 +1,15 @@
-import { AVAILABLE_PRODUCTS, type StyleId } from "@/lib/card";
+import type { StyleId } from "@/lib/card";
 import type { PlaceInfo } from "@/lib/places";
 import { formatBRL, PRICING } from "@/lib/pricing";
 
 // Respostas --------------------------------------------------------------------
 
+/** Onde o cliente termina o atendimento: a placa fica no balcão; o resto do ambiente recebe adesivos QR. */
 export const SPOTS = [
-  { id: "balcao", label: "No balcão ou caixa", hint: "Placa fixa onde o cliente paga", kind: "plaque" },
-  { id: "recepcao", label: "Na recepção", hint: "Placa na entrada ou na saída", kind: "plaque" },
-  { id: "mesas", label: "Nas mesas", hint: "Cartão em cada mesa ou junto da conta", kind: "card" },
-  { id: "atendente", label: "O atendente vai até o cliente", hint: "Cartão com o atendente (salão, oficina, delivery)", kind: "card" },
+  { id: "balcao", label: "No balcão ou caixa", hint: "A placa fica onde o cliente paga", kind: "plaque" },
+  { id: "recepcao", label: "Na recepção", hint: "Adesivo QR na entrada ou na saída", kind: "sticker" },
+  { id: "mesas", label: "Nas mesas", hint: "Adesivo QR em cada mesa", kind: "sticker" },
+  { id: "atendente", label: "O atendente vai até o cliente", hint: "Adesivo QR com o atendente (salão, oficina, delivery)", kind: "sticker" },
 ] as const;
 export type SpotId = (typeof SPOTS)[number]["id"];
 
@@ -26,9 +27,9 @@ export interface QuizAnswers {
   goal: number | null;
   spots: SpotId[];
   clients: ClientBandId | null;
-  /** Balcões/caixas/recepções (placas) */
+  /** Balcões/caixas (não muda o kit: é sempre 1 placa por estabelecimento) */
   counters: number;
-  /** Mesas ou atendentes (cartões) */
+  /** Adesivos QR pelo ambiente (mesas, recepção, atendentes) */
   tables: number;
   style: StyleId;
   /** Modelo das placas e dos cartões do kit. */
@@ -117,46 +118,40 @@ export function diagnose(place: PlaceInfo | null, now = new Date()): DiagnosisIt
 
 // Kit recomendado --------------------------------------------------------------
 
+/** Limite de adesivos pedidos pelo quiz (mais que isso, combinamos no WhatsApp). */
+export const MAX_STICKERS = 30;
+
+/** Serviço de um estabelecimento: sempre 1 placa, mais os adesivos QR do ambiente. */
 export interface Kit {
-  plaques: number;
-  cards: number;
-  /** Total em centavos dos itens com preço definido */
+  plaques: 1;
+  stickers: number;
+  /** Adesivos além dos inclusos no serviço (cobrados à parte) */
+  extraStickers: number;
   totalCents: number;
-  /** Algum item é sob orçamento */
-  hasQuote: boolean;
 }
 
-export function recommendKit(
-  answers: Pick<QuizAnswers, "spots" | "counters" | "tables">,
-  cardsForSale = AVAILABLE_PRODUCTS.some((p) => p.kind === "card"),
-): Kit {
-  const wantsPlaque = answers.spots.some((s) => SPOTS.find((x) => x.id === s)?.kind === "plaque");
-  const wantsCards = answers.spots.some((s) => SPOTS.find((x) => x.id === s)?.kind === "card");
-  // Sem cartão à venda, mesas e atendentes também recebem placas.
-  let plaques = wantsPlaque ? Math.max(1, answers.counters) : 0;
-  if (wantsCards && !cardsForSale) plaques += Math.max(1, answers.tables);
-  const cards = wantsCards && cardsForSale ? Math.max(1, answers.tables) : 0;
-  if (plaques === 0 && cards === 0) plaques = 1;
-
-  const cardTotal = PRICING.card === null ? 0 : cards * PRICING.card;
-  return {
-    plaques,
-    cards,
-    totalCents: plaques * PRICING.plaque + cardTotal,
-    hasQuote: cards > 0 && PRICING.card === null,
-  };
+export function recommendKit(answers: Pick<QuizAnswers, "spots" | "tables">): Kit {
+  const wantsStickers = answers.spots.some((s) => SPOTS.find((x) => x.id === s)?.kind === "sticker");
+  const stickers = wantsStickers ? Math.min(MAX_STICKERS, Math.max(1, answers.tables)) : 0;
+  const extraStickers = Math.max(0, stickers - PRICING.includedStickers);
+  return { plaques: 1, stickers, extraStickers, totalCents: PRICING.service + extraStickers * PRICING.extraSticker };
 }
 
 export function describeKit(kit: Kit): string {
-  const parts = [];
-  if (kit.plaques) parts.push(`${kit.plaques} ${kit.plaques === 1 ? "placa" : "placas"}`);
-  if (kit.cards) parts.push(`${kit.cards} ${kit.cards === 1 ? "cartão" : "cartões"}`);
-  return parts.join(" + ");
+  const stickers = kit.stickers ? ` + ${kit.stickers} ${kit.stickers === 1 ? "adesivo QR" : "adesivos QR"}` : "";
+  return `1 placa${stickers}`;
 }
 
 export function kitPriceLabel(kit: Kit): string {
-  if (kit.totalCents === 0) return "sob orçamento";
-  return kit.hasQuote ? `${formatBRL(kit.totalCents)} + cartões sob orçamento` : formatBRL(kit.totalCents);
+  return formatBRL(kit.totalCents);
+}
+
+/** Como o valor se compõe: "Serviço anual R$ 90,00 + 2 adesivos extras R$ 30,00". */
+export function kitPriceBreakdown(kit: Kit): string {
+  const base = `Serviço anual ${formatBRL(PRICING.service)}`;
+  if (!kit.extraStickers) return base;
+  const extra = `${kit.extraStickers} ${kit.extraStickers === 1 ? "adesivo extra" : "adesivos extras"}`;
+  return `${base} + ${extra} ${formatBRL(kit.extraStickers * PRICING.extraSticker)}`;
 }
 
 // Contato ----------------------------------------------------------------------
@@ -188,7 +183,7 @@ export function whatsappSummary(params: {
   goal: number | null;
 }): string {
   const lines = [
-    `Olá! Sou ${params.name.trim()} e quero a placa TopTap.`,
+    `Olá! Sou ${params.name.trim()} e quero o serviço TopTap.`,
     params.business ? `Negócio: ${params.business.name}${params.business.city ? ` (${params.business.city})` : ""}` : null,
     `Pedido: ${describeKit(params.kit)} · estilo ${params.styleLabel}`,
     params.models ? `Modelo: ${params.models}` : null,

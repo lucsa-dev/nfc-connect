@@ -7,7 +7,9 @@ import {
   formatBrPhone,
   goalLabel,
   goalOptions,
+  kitPriceBreakdown,
   kitPriceLabel,
+  MAX_STICKERS,
   monthlyNewReviews,
   normalizeBrPhone,
   recommendKit,
@@ -102,34 +104,30 @@ describe("diagnose", () => {
 });
 
 describe("recommendKit", () => {
-  it("balcão gera placas a R$ 80", () => {
-    const kit = recommendKit({ spots: ["balcao"], counters: 2, tables: 0 });
-    expect(kit).toEqual({ plaques: 2, cards: 0, totalCents: 16000, hasQuote: false });
-    expect(describeKit(kit)).toBe("2 placas");
-    expect(kitPriceLabel(kit)).toMatch(/R\$\s?160,00/);
+  it("só o balcão: o serviço com 1 placa, R$ 90", () => {
+    const kit = recommendKit({ spots: ["balcao"], tables: 4 });
+    expect(kit).toEqual({ plaques: 1, stickers: 0, extraStickers: 0, totalCents: 9000 });
+    expect(describeKit(kit)).toBe("1 placa");
+    expect(kitPriceLabel(kit)).toMatch(/R\$\s?90,00/);
+    expect(kitPriceBreakdown(kit)).toMatch(/^Serviço anual R\$\s?90,00$/);
   });
 
-  it("sem cartão à venda, mesas e atendentes recebem placas", () => {
-    const kit = recommendKit({ spots: ["balcao", "mesas"], counters: 1, tables: 8 });
-    expect(kit).toEqual({ plaques: 9, cards: 0, totalCents: 72000, hasQuote: false });
-    expect(recommendKit({ spots: ["atendente"], counters: 0, tables: 3 })).toMatchObject({ plaques: 3, cards: 0 });
+  it("até 5 adesivos QR estão inclusos", () => {
+    const kit = recommendKit({ spots: ["balcao", "mesas"], tables: 5 });
+    expect(kit).toEqual({ plaques: 1, stickers: 5, extraStickers: 0, totalCents: 9000 });
+    expect(describeKit(kit)).toBe("1 placa + 5 adesivos QR");
+    expect(describeKit(recommendKit({ spots: ["recepcao"], tables: 1 }))).toBe("1 placa + 1 adesivo QR");
   });
 
-  it("com cartão à venda, mesas geram cartões sob orçamento", () => {
-    const kit = recommendKit({ spots: ["balcao", "mesas"], counters: 1, tables: 8 }, true);
-    expect(kit).toMatchObject({ plaques: 1, cards: 8, totalCents: 8000, hasQuote: true });
-    expect(describeKit(kit)).toBe("1 placa + 8 cartões");
-    expect(kitPriceLabel(kit)).toContain("cartões sob orçamento");
+  it("a partir do 6º adesivo, R$ 15 cada", () => {
+    const kit = recommendKit({ spots: ["mesas", "atendente"], tables: 8 });
+    expect(kit).toEqual({ plaques: 1, stickers: 8, extraStickers: 3, totalCents: 13500 });
+    expect(kitPriceBreakdown(kit)).toMatch(/3 adesivos extras R\$\s?45,00/);
   });
 
-  it("sem resposta, recomenda 1 placa", () => {
-    expect(recommendKit({ spots: [], counters: 0, tables: 0 })).toMatchObject({ plaques: 1, cards: 0 });
-  });
-
-  it("só cartões: preço todo sob orçamento", () => {
-    const kit = recommendKit({ spots: ["atendente"], counters: 0, tables: 3 }, true);
-    expect(kit).toMatchObject({ plaques: 0, cards: 3, totalCents: 0 });
-    expect(kitPriceLabel(kit)).toBe("sob orçamento");
+  it("limita os adesivos pedidos pelo quiz", () => {
+    expect(recommendKit({ spots: ["mesas"], tables: 500 }).stickers).toBe(MAX_STICKERS);
+    expect(recommendKit({ spots: [], tables: 0 })).toMatchObject({ plaques: 1, stickers: 0, totalCents: 9000 });
   });
 });
 
@@ -156,11 +154,11 @@ describe("whatsappSummary", () => {
     const msg = whatsappSummary({
       name: " Ana ",
       business: place(),
-      kit: recommendKit({ spots: ["balcao"], counters: 1, tables: 0 }),
+      kit: recommendKit({ spots: ["balcao"], tables: 0 }),
       styleLabel: "Clássico",
       goal: 250,
     });
-    expect(msg).toContain("Sou Ana e quero a placa TopTap.");
+    expect(msg).toContain("Sou Ana e quero o serviço TopTap.");
     expect(msg).toContain("Negócio: Padaria Central (Fortaleza)");
     expect(msg).toContain("Pedido: 1 placa · estilo Clássico");
     expect(msg).toContain("Meta: 250 avaliações");

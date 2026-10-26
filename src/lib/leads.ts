@@ -22,6 +22,18 @@ export function mapsQueryOf(name: string, city?: string | null, state?: string |
   return `${name.trim()}, ${city.trim()}${state ? ` - ${state.trim()}` : ""}`.slice(0, 200);
 }
 
+/** Itens do pedido: "1 placa + 4 adesivos QR" (pedidos antigos podem ter cartões). */
+export function leadKitLabel(lead: { plaques: number | null; cards: number | null; stickers: number | null }): string {
+  const count = (n: number | null, one: string, many: string) => (n ? `${n} ${n === 1 ? one : many}` : null);
+  return [
+    count(lead.plaques, "placa", "placas"),
+    count(lead.stickers, "adesivo QR", "adesivos QR"),
+    count(lead.cards, "cartão", "cartões"),
+  ]
+    .filter(Boolean)
+    .join(" + ");
+}
+
 /** Observações do negócio criado a partir do lead. */
 export function leadDescription(lead: {
   contact_name: string | null;
@@ -29,15 +41,11 @@ export function leadDescription(lead: {
   place_address: string | null;
   plaques: number | null;
   cards: number | null;
+  stickers: number | null;
   total_cents: number | null;
   style: string | null;
 }): string {
-  const kit = [
-    lead.plaques ? `${lead.plaques} ${lead.plaques === 1 ? "placa" : "placas"}` : null,
-    lead.cards ? `${lead.cards} ${lead.cards === 1 ? "cartão" : "cartões"}` : null,
-  ]
-    .filter(Boolean)
-    .join(" + ");
+  const kit = leadKitLabel(lead);
   return [
     lead.contact_name && `Contato: ${lead.contact_name}${lead.whatsapp ? ` · ${lead.whatsapp}` : ""}`,
     lead.place_address && `Endereço: ${lead.place_address}`,

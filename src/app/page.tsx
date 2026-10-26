@@ -8,6 +8,7 @@ import { PhoneMock } from "@/components/landing/phone-mock";
 import { WhatsAppFab } from "@/components/landing/whatsapp-fab";
 import { ThemeSwitcher } from "@/components/theme/theme-switcher";
 import { CARD_COPY, displayUrl, qrPath } from "@/lib/card";
+import { formatBRL, PRICING } from "@/lib/pricing";
 import { getSiteSettings } from "@/lib/settings";
 import { siteConfig, whatsappHref } from "@/lib/site-config";
 import { getSiteUrl } from "@/lib/urls";
@@ -76,6 +77,7 @@ const RANK_EXAMPLE = [9, 9, 7, 6, 6, 5, 4, 4, 3, 3, 2, 2];
 const RECEIPT: Array<[string, string]> = [
   ["Diagnóstico do perfil", "grátis"],
   ["Placa de balcão NFC + QR Code", "1"],
+  ["Adesivos QR para mesas e recepção", `até ${PRICING.includedStickers}`],
   ["Relatórios mensais", "12"],
   ["Mapa de ranking", "todo mês"],
   ["Leitura das avaliações por IA", "todo mês"],
@@ -89,6 +91,10 @@ const FAQ = [
   {
     q: "Tem mensalidade?",
     a: "Não. É um pagamento único que cobre 12 meses de monitoramento, com um relatório por mês. Sem fidelidade e sem cobrança recorrente.",
+  },
+  {
+    q: "E se eu precisar de QR Code nas mesas?",
+    a: `A placa fica no balcão e o serviço inclui até ${PRICING.includedStickers} adesivos com QR Code para mesas, recepção ou atendentes. Precisa de mais? Cada adesivo extra custa ${formatBRL(PRICING.extraSticker)}.`,
   },
   {
     q: "O que acontece depois dos 12 meses?",
@@ -259,9 +265,9 @@ function Receipt() {
           <span className={TEXT.green}>R$ 0</span>
         </li>
         <li className="flex items-end text-base font-semibold">
-          <span>Pagamento</span>
+          <span>Pagamento único</span>
           <span className="mx-2 mb-1 flex-1 border-b border-dotted border-foreground/30" aria-hidden />
-          <span>único</span>
+          <span>{formatBRL(PRICING.service)}</span>
         </li>
       </ul>
       <div className="flex h-2" aria-hidden>
@@ -480,8 +486,8 @@ export default async function LandingPage() {
                 Paga uma vez. Acompanha o ano todo.
               </h2>
               <p className="mt-6 max-w-md text-lg text-pretty text-white/85">
-                Nada de mensalidade nem fidelidade. Um pagamento cobre a placa e 12 meses de relatórios. Antes de decidir, você vê o
-                diagnóstico de graça.
+                Nada de mensalidade nem fidelidade. {formatBRL(PRICING.service)} cobrem a placa, os adesivos QR e 12 meses de
+                relatórios. Antes de decidir, você vê o diagnóstico de graça.
               </p>
               <div className="mt-8">
                 <CtaButton variant="secondary">Começar pelo diagnóstico</CtaButton>

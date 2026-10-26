@@ -1,7 +1,12 @@
-/** Preços em centavos. `null` = sob orçamento. */
+/**
+ * Preços em centavos. Um serviço por estabelecimento: 1 placa no balcão, até
+ * 5 adesivos QR (impressos na Niimbot) pelo ambiente e 12 relatórios mensais.
+ * Adesivos além dos inclusos são cobrados por unidade.
+ */
 export const PRICING = {
-  plaque: 8000,
-  card: null as number | null,
+  service: 9000,
+  includedStickers: 5,
+  extraSticker: 1500,
 } as const;
 
 export function formatBRL(cents: number): string {

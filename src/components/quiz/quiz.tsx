@@ -31,17 +31,19 @@ import {
   estimateTimeline,
   goalLabel,
   goalOptions,
+  kitPriceBreakdown,
   kitPriceLabel,
+  MAX_STICKERS,
   monthlyNewReviews,
   normalizeBrPhone,
   PROJECTION,
   recommendKit,
   SPOTS,
   whatsappSummary,
-  type CardModel,
   type PlaqueModel,
   type Tone,
 } from "@/lib/quiz";
+import { formatBRL, PRICING } from "@/lib/pricing";
 import { contactHref, whatsappHref } from "@/lib/site-config";
 
 type Dispatch = React.Dispatch<Parameters<typeof reducer>[1]>;
@@ -128,10 +130,25 @@ function Option({
   );
 }
 
-function Stepper({ label, value, onChange, max }: { label: string; value: number; onChange: (v: number) => void; max: number }) {
+function Stepper({
+  label,
+  hint,
+  value,
+  onChange,
+  max,
+}: {
+  label: string;
+  hint?: string;
+  value: number;
+  onChange: (v: number) => void;
+  max: number;
+}) {
   return (
     <div className="flex items-center justify-between gap-4 rounded-xl px-4 py-3 ring-1 ring-foreground/15">
-      <span className="font-medium">{label}</span>
+      <span>
+        <span className="block font-medium">{label}</span>
+        {hint && <span className="block text-sm text-muted-foreground">{hint}</span>}
+      </span>
       <div className="flex items-center gap-3">
         <Button variant="outline" size="icon" onClick={() => onChange(value - 1)} disabled={value <= 1} aria-label={`Menos: ${label}`}>
           <MinusIcon />
@@ -152,7 +169,7 @@ function Stepper({ label, value, onChange, max }: { label: string; value: number
 function StepBusiness({ state, dispatch, placesEnabled, mapsSearch }: StepProps) {
   return (
     <>
-      <Title>Vamos preparar a sua placa TopTap</Title>
+      <Title>Vamos ver como o seu negócio está no Google</Title>
       <Lead>
         {placesEnabled || mapsSearch
           ? "Qual é o nome do seu negócio no Google? Busque como ele aparece no Google Maps."
@@ -198,12 +215,14 @@ function StepGoal({ state, dispatch }: StepProps) {
 }
 
 function StepSpots({ state, dispatch }: StepProps) {
-  const plaque = state.spots.some((s) => SPOTS.find((x) => x.id === s)?.kind === "plaque");
-  const cards = state.spots.some((s) => SPOTS.find((x) => x.id === s)?.kind === "card");
+  const stickers = state.spots.some((s) => SPOTS.find((x) => x.id === s)?.kind === "sticker");
   return (
     <>
       <Title>Onde o cliente está quando termina o atendimento?</Title>
-      <Lead>Marque todos que se aplicam e diga quantos são. Assim montamos o kit certo.</Lead>
+      <Lead>
+        A placa fica no balcão. Mesas, recepção e atendentes recebem adesivos com QR Code: {PRICING.includedStickers} já vêm no
+        serviço.
+      </Lead>
       <div className="mt-6 grid gap-3">
         {SPOTS.map((s) => (
           <Option key={s.id} multi hint={s.hint} selected={state.spots.includes(s.id)} onClick={() => dispatch({ type: "toggleSpot", spot: s.id })}>
@@ -211,12 +230,15 @@ function StepSpots({ state, dispatch }: StepProps) {
           </Option>
         ))}
       </div>
-      {(plaque || cards) && (
-        <div className="mt-6 grid gap-3">
-          {plaque && (
-            <Stepper label="Balcões, caixas ou recepções" value={state.counters} max={20} onChange={(value) => dispatch({ type: "counters", value })} />
-          )}
-          {cards && <Stepper label="Mesas ou atendentes" value={state.tables} max={200} onChange={(value) => dispatch({ type: "tables", value })} />}
+      {stickers && (
+        <div className="mt-6">
+          <Stepper
+            label="Adesivos QR pelo ambiente"
+            hint={`${PRICING.includedStickers} inclusos. A partir do ${PRICING.includedStickers + 1}º, ${formatBRL(PRICING.extraSticker)} cada.`}
+            value={state.tables}
+            max={MAX_STICKERS}
+            onChange={(value) => dispatch({ type: "tables", value })}
+          />
         </div>
       )}
     </>
@@ -319,11 +341,12 @@ function StepPlan({ state, dispatch, art }: StepProps) {
       </p>
 
       <div className="mt-6 rounded-2xl p-4 ring-1 ring-foreground/15">
-        <div className="flex items-baseline justify-between gap-3">
-          <p className="font-heading font-semibold">Kit recomendado: {describeKit(kit)}</p>
-        </div>
+        <p className="font-heading font-semibold">Serviço anual TopTap: {describeKit(kit)}</p>
         <p className="mt-0.5 text-lg font-semibold text-primary">{kitPriceLabel(kit)}</p>
-        <p className="text-xs text-muted-foreground">Pagamento único, sem mensalidade.</p>
+        {kit.extraStickers > 0 && <p className="text-sm text-muted-foreground">{kitPriceBreakdown(kit)}</p>}
+        <p className="mt-1 text-xs text-muted-foreground">
+          Pagamento único, sem mensalidade. Inclui 12 meses de monitoramento no Google Maps, com um relatório por mês.
+        </p>
 
         {AVAILABLE_STYLES.length > 1 && (
           <>
@@ -332,25 +355,13 @@ function StepPlan({ state, dispatch, art }: StepProps) {
           </>
         )}
 
-        {kit.plaques > 0 && pickable("plaque") && (
+        {pickable("plaque") && (
           <>
             <p className="mt-5 mb-2 text-sm font-medium">Modelo da placa</p>
             <ProductPicker
               kind="plaque"
               value={state.plaqueModel}
               onChange={(model) => dispatch({ type: "plaqueModel", model: model as PlaqueModel })}
-              style={state.style}
-              art={art}
-            />
-          </>
-        )}
-        {kit.cards > 0 && pickable("card") && (
-          <>
-            <p className="mt-5 mb-2 text-sm font-medium">Modelo do cartão</p>
-            <ProductPicker
-              kind="card"
-              value={state.cardModel}
-              onChange={(model) => dispatch({ type: "cardModel", model: model as CardModel })}
               style={state.style}
               art={art}
             />
@@ -366,7 +377,7 @@ function StepContact({ state, dispatch }: StepProps & { error: string | null }) 
   return (
     <>
       <Title>Para onde enviamos o seu pedido?</Title>
-      <Lead>Vamos te chamar no WhatsApp para confirmar a placa e combinar a entrega.</Lead>
+      <Lead>Vamos te chamar no WhatsApp para confirmar o pedido e combinar a entrega da placa.</Lead>
       <div className="mt-6 grid gap-4">
         <div className="grid gap-1.5">
           <Label htmlFor="quiz-name">Seu nome</Label>
@@ -412,23 +423,16 @@ function StepContact({ state, dispatch }: StepProps & { error: string | null }) 
 /** Há mais de um modelo à venda desse tipo (senão o seletor some). */
 const pickable = (kind: Product["kind"]) => AVAILABLE_PRODUCTS.filter((p) => p.kind === kind).length > 1;
 
-/** Modelos do kit (placa e/ou cartão), na ordem de exibição. */
-function kitModels(state: QuizState, kit: ReturnType<typeof recommendKit>) {
-  return [kit.plaques ? getProduct(state.plaqueModel) : null, kit.cards ? getProduct(state.cardModel) : null].filter(
-    (p): p is ReturnType<typeof getProduct> => p !== null,
-  );
-}
-
 function StepDone({ state, dispatch, art, whatsapp }: StepProps) {
   const kit = recommendKit(state);
   const style = getStyle(state.style);
-  const models = kitModels(state, kit);
+  const plaque = getProduct(state.plaqueModel);
   const message = whatsappSummary({
     name: state.contact.name,
     business: state.business,
     kit,
     styleLabel: style.label,
-    models: models.map((m) => m.label.toLowerCase()).join(", "),
+    models: plaque.label.toLowerCase(),
     goal: state.goal,
   });
   const href = whatsapp ? whatsappHref(whatsapp, message) : contactHref(message);
@@ -443,9 +447,7 @@ function StepDone({ state, dispatch, art, whatsapp }: StepProps) {
         {href ? " Envie a mensagem abaixo para agilizar o atendimento." : " Vamos te chamar no WhatsApp em breve."}
       </Lead>
       <div className="mx-auto my-6 flex h-44 items-center justify-center gap-4">
-        {models.map((m) => (
-          <ProductArt key={m.id} product={m} style={state.style} art={art} />
-        ))}
+        <ProductArt product={plaque} style={state.style} art={art} />
       </div>
       {href && (
         <a

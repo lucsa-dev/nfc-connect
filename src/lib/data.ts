@@ -87,7 +87,7 @@ export async function listLeads(status: LeadStatus | null) {
   const supabase = await createClient();
   let query = supabase
     .from("leads")
-    .select("id, status, step, place_name, place_city, place_state, contact_name, whatsapp, plaques, cards, total_cents, updated_at, created_at")
+    .select("id, status, step, place_name, place_city, place_state, contact_name, whatsapp, plaques, cards, stickers, total_cents, updated_at, created_at")
     .order("updated_at", { ascending: false })
     .limit(200);
   if (status) query = query.eq("status", status);

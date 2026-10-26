@@ -228,7 +228,7 @@ export async function saveLead(payload: LeadPayload): Promise<{ ok: boolean; err
   const whatsapp = data.contact?.whatsapp ? normalizeBrPhone(data.contact.whatsapp) : null;
   if (data.contact?.whatsapp && !whatsapp) return { ok: false, error: "WhatsApp inválido" };
 
-  const kit = recommendKit({ spots: data.spots as never, counters: data.counters, tables: data.tables });
+  const kit = recommendKit({ spots: data.spots as never, tables: data.tables });
   const b = data.business;
   const supabase = createAdminClient();
 
@@ -262,10 +262,11 @@ export async function saveLead(payload: LeadPayload): Promise<{ ok: boolean; err
     tables: data.tables,
     style: data.style,
     // Modelo só faz sentido para o que está no kit.
-    plaque_model: kit.plaques ? data.plaqueModel : null,
-    card_model: kit.cards ? data.cardModel : null,
+    plaque_model: data.plaqueModel,
+    card_model: null,
     plaques: kit.plaques,
-    cards: kit.cards,
+    cards: 0,
+    stickers: kit.stickers,
     total_cents: kit.totalCents,
     estimate: data.goal !== null ? estimateTimeline(b?.reviews ?? 0, data.goal, data.clients as never) : null,
     utm: data.utm,

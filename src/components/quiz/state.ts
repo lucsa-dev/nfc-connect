@@ -1,6 +1,6 @@
 import { getProduct, getStyle, type StyleId } from "@/lib/card";
 import type { PlaceInfo } from "@/lib/places";
-import { goalOptions, normalizeBrPhone, type CardModel, type ClientBandId, type PlaqueModel, type QuizAnswers, type SpotId } from "@/lib/quiz";
+import { goalOptions, MAX_STICKERS, normalizeBrPhone, type CardModel, type ClientBandId, type PlaqueModel, type QuizAnswers, type SpotId } from "@/lib/quiz";
 
 export const STEPS = [
   "negocio",
@@ -148,7 +148,7 @@ export function reducer(state: QuizState, action: Action): QuizState {
     case "counters":
       return { ...state, counters: Math.min(20, Math.max(1, action.value)) };
     case "tables":
-      return { ...state, tables: Math.min(200, Math.max(1, action.value)) };
+      return { ...state, tables: Math.min(MAX_STICKERS, Math.max(1, action.value)) };
     case "style":
       return { ...state, style: action.style };
     case "plaqueModel":

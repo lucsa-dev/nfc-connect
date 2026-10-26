@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { countLeadsByStatus, LEAD_STATUSES, listLeads, type LeadStatus } from "@/lib/data";
 import { formatDateTime } from "@/lib/format";
-import { LEAD_STATUS_LABEL } from "@/lib/leads";
+import { LEAD_STATUS_LABEL, leadKitLabel } from "@/lib/leads";
 import { formatBRL } from "@/lib/pricing";
 import { formatBrPhone } from "@/lib/quiz";
 
@@ -81,7 +81,7 @@ export default async function LeadsPage({ searchParams }: PageProps<"/dashboard/
                   </span>
                   <span className="flex flex-wrap justify-between gap-x-3 text-xs text-muted-foreground">
                     <span>
-                      {[l.plaques ? `${l.plaques} placa(s)` : null, l.cards ? `${l.cards} cartão(ões)` : null].filter(Boolean).join(" + ") || "Sem kit"}
+                      {leadKitLabel(l) || "Sem kit"}
                       {l.total_cents ? ` · ${formatBRL(l.total_cents)}` : ""}
                       {l.status === "quiz" && l.step ? ` · parou em: ${l.step}` : ""}
                     </span>
@@ -117,7 +117,7 @@ export default async function LeadsPage({ searchParams }: PageProps<"/dashboard/
                     {l.whatsapp && <div className="text-xs text-muted-foreground tabular-nums">{formatBrPhone(l.whatsapp)}</div>}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {[l.plaques ? `${l.plaques} placa(s)` : null, l.cards ? `${l.cards} cartão(ões)` : null].filter(Boolean).join(" + ") || "—"}
+                    {leadKitLabel(l) || "—"}
                     {l.total_cents ? <div className="text-xs text-muted-foreground">{formatBRL(l.total_cents)}</div> : null}
                   </TableCell>
                   <TableCell>

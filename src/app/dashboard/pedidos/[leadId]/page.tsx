@@ -11,7 +11,7 @@ import { getProduct, getStyle } from "@/lib/card";
 import { apifyEnabled } from "@/lib/apify";
 import { getLead } from "@/lib/data";
 import { formatDateTime } from "@/lib/format";
-import { LEAD_STATUS_LABEL } from "@/lib/leads";
+import { LEAD_STATUS_LABEL, leadKitLabel } from "@/lib/leads";
 import { reviewUrl } from "@/lib/places";
 import { formatBRL } from "@/lib/pricing";
 import { CLIENT_BANDS, formatBrPhone, SPOTS } from "@/lib/quiz";
@@ -73,10 +73,8 @@ export default async function LeadPage({ params }: PageProps<"/dashboard/pedidos
               <Row label="Contato">{lead.contact_name}</Row>
               <Row label="WhatsApp">{lead.whatsapp ? formatBrPhone(lead.whatsapp) : null}</Row>
               <Row label="Aceita marketing">{lead.marketing_consent ? "Sim" : "Não"}</Row>
-              <Row label="Kit">
-                {[lead.plaques ? `${lead.plaques} placa(s)` : null, lead.cards ? `${lead.cards} cartão(ões)` : null].filter(Boolean).join(" + ") || null}
-              </Row>
-              <Row label="Valor (placas)">{lead.total_cents ? formatBRL(lead.total_cents) : null}</Row>
+              <Row label="Kit">{leadKitLabel(lead) || null}</Row>
+              <Row label="Valor">{lead.total_cents ? formatBRL(lead.total_cents) : null}</Row>
               <Row label="Estilo">{lead.style ? getStyle(lead.style).label : null}</Row>
               <Row label="Modelo">
                 {[lead.plaque_model, lead.card_model]
@@ -88,9 +86,6 @@ export default async function LeadPage({ params }: PageProps<"/dashboard/pedidos
                 {lead.spots.length ? lead.spots.map((s) => SPOTS.find((x) => x.id === s)?.label ?? s).join(", ") : null}
               </Row>
               <Row label="Clientes por dia">{CLIENT_BANDS.find((b) => b.id === lead.clients_band)?.label ?? null}</Row>
-              <Row label="Pontos de atendimento">
-                {lead.counters || lead.tables ? `${lead.counters ?? 0} balcão(ões) · ${lead.tables ?? 0} mesa(s)/atendente(s)` : null}
-              </Row>
               <Row label="Meta / prazo">{lead.goal ? `${lead.goal} avaliações · ${lead.estimate ?? ""}` : null}</Row>
               <Row label="Etapa">{lead.step}</Row>
               {Object.keys(lead.utm as object).length > 0 && (

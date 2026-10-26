@@ -174,6 +174,7 @@ export type Database = {
           plaques: number | null
           session_id: string
           spots: string[]
+          stickers: number | null
           status: string
           step: string | null
           style: string | null
@@ -210,6 +211,7 @@ export type Database = {
           plaques?: number | null
           session_id: string
           spots?: string[]
+          stickers?: number | null
           status?: string
           step?: string | null
           style?: string | null
@@ -246,6 +248,7 @@ export type Database = {
           plaques?: number | null
           session_id?: string
           spots?: string[]
+          stickers?: number | null
           status?: string
           step?: string | null
           style?: string | null

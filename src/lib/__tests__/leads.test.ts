@@ -27,11 +27,12 @@ describe("leadDescription", () => {
       place_address: "Rua A, 1",
       plaques: 2,
       cards: 1,
+      stickers: 3,
       total_cents: 16000,
       style: "classico",
     });
     expect(text).toContain("Contato: Ana · +5585999998888");
     expect(text).toContain("Endereço: Rua A, 1");
-    expect(text).toMatch(/Pedido \(quiz\): 2 placas \+ 1 cartão, estilo classico · R\$\s?160,00/);
+    expect(text).toMatch(/Pedido \(quiz\): 2 placas \+ 3 adesivos QR \+ 1 cartão, estilo classico · R\$\s?160,00/);
   });
 });

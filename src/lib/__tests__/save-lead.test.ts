@@ -59,16 +59,17 @@ describe("saveLead", () => {
       session_id: base.sessionId,
       status: "quiz",
       place_id: "ChIJ1",
-      // Sem cartão à venda, as 6 mesas também recebem placa.
-      plaques: 8,
+      // 1 placa + 6 adesivos: 5 inclusos e 1 extra (R$ 90 + R$ 15).
+      plaques: 1,
+      stickers: 6,
       cards: 0,
-      total_cents: 64000,
+      total_cents: 10500,
       estimate: "3 a 4 meses",
       utm: { utm_source: "instagram" },
     });
   });
 
-  it("guarda o modelo só do que está no kit (padrão para quizzes antigos)", async () => {
+  it("guarda o modelo da placa e nunca o de cartão", async () => {
     await saveLead({ ...base, plaqueModel: "placa-retangular", cardModel: "cartao-vertical" });
     expect(db.upserts[0]).toMatchObject({ plaque_model: "placa-retangular", card_model: null });
 
