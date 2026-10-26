@@ -1,6 +1,6 @@
 import { getProduct, getStyle, type StyleId } from "@/lib/card";
 import type { PlaceInfo } from "@/lib/places";
-import { goalOptions, MAX_STICKERS, normalizeBrPhone, type CardModel, type ClientBandId, type PlaqueModel, type QuizAnswers, type SpotId } from "@/lib/quiz";
+import { goalOptions, MAX_STICKERS, normalizeBrPhone, phoneForInput, type CardModel, type ClientBandId, type PlaqueModel, type QuizAnswers, type SpotId } from "@/lib/quiz";
 
 export const STEPS = [
   "negocio",
@@ -129,10 +129,13 @@ export function reducer(state: QuizState, action: Action): QuizState {
         state.business !== null &&
         action.business.placeId === state.business.placeId &&
         action.business.name === state.business.name;
+      // Sugere o telefone do Google como WhatsApp, sem apagar o que o cliente digitou.
+      const suggested = state.contact.whatsapp === "" || state.contact.whatsapp === phoneForInput(state.business?.phone);
       return {
         ...state,
         business: action.business,
         goal: same ? state.goal : null,
+        contact: suggested ? { ...state.contact, whatsapp: phoneForInput(action.business?.phone) } : state.contact,
         // Novo token de sessão do Google a cada negócio escolhido.
         placesToken: crypto.randomUUID(),
       };

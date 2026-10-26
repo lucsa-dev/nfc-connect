@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { normalizeGoogleReviewUrl, type PlaceInfo } from "@/lib/places";
-import { normalizeBrPhone } from "@/lib/quiz";
+import { normalizeBrPhone, phoneForInput } from "@/lib/quiz";
 
 export function ActivationForm({ code, placesEnabled }: { code: string; placesEnabled: boolean }) {
   const [sessionToken] = useState(() => crypto.randomUUID());
@@ -25,6 +25,12 @@ export function ActivationForm({ code, placesEnabled }: { code: string; placesEn
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const phoneValid = normalizeBrPhone(whatsapp) !== null;
 
+  // Sugere o telefone do Google como WhatsApp, sem apagar o que o dono digitou.
+  function choosePlace(next: PlaceInfo | null) {
+    if (whatsapp === "" || whatsapp === phoneForInput(place?.phone)) setWhatsapp(phoneForInput(next?.phone));
+    setPlace(next);
+  }
+
   function submit() {
     if (!place) return;
     const input: ActivationInput = place.placeId
@@ -40,7 +46,7 @@ export function ActivationForm({ code, placesEnabled }: { code: string; placesEn
 
   return (
     <div className="grid gap-4">
-      <BusinessSearch value={place} sessionToken={sessionToken} placesEnabled={placesEnabled} onChange={setPlace} />
+      <BusinessSearch value={place} sessionToken={sessionToken} placesEnabled={placesEnabled} onChange={choosePlace} />
 
       {manual && (
         <div className="grid gap-1.5">

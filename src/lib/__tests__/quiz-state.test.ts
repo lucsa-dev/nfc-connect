@@ -35,6 +35,20 @@ describe("quiz: estado", () => {
     expect(s.goal).toBeNull();
   });
 
+  it("sugere o telefone do Google como WhatsApp, sem apagar o que foi digitado", () => {
+    const place = (name: string, phone: string | null) =>
+      ({ placeId: name, name, address: null, city: null, state: null, rating: null, reviews: 0, category: null, mapsUrl: null, businessStatus: null, lastReviewAt: null, phone });
+    let s = reducer(initialState(), { type: "business", business: place("A", "(85) 3222-1111") });
+    expect(s.contact.whatsapp).toBe("(85) 3222-1111");
+    // Outro negócio troca a sugestão.
+    s = reducer(s, { type: "business", business: place("B", "+55 85 99999-8888") });
+    expect(s.contact.whatsapp).toBe("(85) 99999-8888");
+    // O que o cliente digitou fica.
+    s = reducer(s, { type: "contact", contact: { whatsapp: "(85) 98888-7777" } });
+    s = reducer(s, { type: "business", business: place("C", "(85) 3222-1111") });
+    expect(s.contact.whatsapp).toBe("(85) 98888-7777");
+  });
+
   it("alterna locais e limita quantidades", () => {
     let s = reducer(initialState(), { type: "toggleSpot", spot: "mesas" });
     expect(s.spots).toEqual(["balcao", "mesas"]);

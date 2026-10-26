@@ -11,6 +11,7 @@ import {
   kitPriceLabel,
   MAX_STICKERS,
   monthlyNewReviews,
+  phoneForInput,
   normalizeBrPhone,
   recommendKit,
   whatsappSummary,
@@ -142,6 +143,13 @@ describe("telefone", () => {
   it.each(["", "9999-8888", "(85) 89999-8888", "(00) 99999-8888", "123"])("rejeita %j", (input) =>
     expect(normalizeBrPhone(input)).toBeNull(),
   );
+
+  it("converte o telefone do Google para o campo de WhatsApp", () => {
+    expect(phoneForInput("(85) 3222-1111")).toBe("(85) 3222-1111");
+    expect(phoneForInput("+55 85 99999-8888")).toBe("(85) 99999-8888");
+    expect(phoneForInput("0800 123 4567")).toBe("");
+    expect(phoneForInput(null)).toBe("");
+  });
 
   it("formata para exibição", () => {
     expect(formatBrPhone("+5585999998888")).toBe("(85) 99999-8888");

@@ -51,6 +51,7 @@ describe("parsePlaceDetails", () => {
       googleMapsUri: "https://maps.google.com/?cid=1",
       businessStatus: "OPERATIONAL",
       reviews: [{ publishTime: "2026-08-01T10:00:00Z" }, { publishTime: "2026-09-20T10:00:00Z" }, {}],
+      nationalPhoneNumber: "(85) 3222-1111",
     });
     expect(info).toEqual({
       placeId: "ChIJ1",
@@ -64,6 +65,7 @@ describe("parsePlaceDetails", () => {
       mapsUrl: "https://maps.google.com/?cid=1",
       businessStatus: "OPERATIONAL",
       lastReviewAt: "2026-09-20T10:00:00Z",
+      phone: "(85) 3222-1111",
     });
   });
 

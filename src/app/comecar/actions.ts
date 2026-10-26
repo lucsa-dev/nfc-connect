@@ -92,6 +92,7 @@ function toPlaceInfo(p: PlaceInfo): PlaceInfo {
     mapsUrl: p.mapsUrl,
     businessStatus: p.businessStatus,
     lastReviewAt: p.lastReviewAt,
+    phone: p.phone ?? null,
   };
 }
 

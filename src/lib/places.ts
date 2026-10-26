@@ -18,6 +18,8 @@ export const DETAILS_FIELDS = [
   "googleMapsUri",
   "businessStatus",
   "reviews",
+  // Mesmo nível de cobrança de rating/reviews: não encarece a chamada.
+  "nationalPhoneNumber",
 ].join(",");
 
 export interface PlaceSuggestion {
@@ -39,6 +41,8 @@ export interface PlaceInfo {
   businessStatus: string | null;
   /** Data (ISO) da avaliação mais recente entre as retornadas pelo Google. */
   lastReviewAt: string | null;
+  /** Telefone do perfil, para sugerir o WhatsApp do dono. O Google não informa e-mail. */
+  phone?: string | null;
 }
 
 export function autocompleteBody(input: string, sessionToken: string) {
@@ -84,6 +88,7 @@ interface DetailsResponse {
   googleMapsUri?: string;
   businessStatus?: string;
   reviews?: Array<{ publishTime?: string }>;
+  nationalPhoneNumber?: string;
 }
 
 export function parsePlaceDetails(json: DetailsResponse): PlaceInfo {
@@ -108,6 +113,7 @@ export function parsePlaceDetails(json: DetailsResponse): PlaceInfo {
     mapsUrl: json.googleMapsUri ?? null,
     businessStatus: json.businessStatus ?? null,
     lastReviewAt: times.length ? times[times.length - 1]! : null,
+    phone: json.nationalPhoneNumber ?? null,
   };
 }
 
@@ -124,7 +130,6 @@ export const PROFILE_FIELDS = [
   "types",
   "primaryType",
   "websiteUri",
-  "nationalPhoneNumber",
   "regularOpeningHours.weekdayDescriptions",
   "photos",
   "editorialSummary",

@@ -167,6 +167,12 @@ export function normalizeBrPhone(input: string): string | null {
   return `+55${digits}`;
 }
 
+/** Telefone do Google no formato do campo de WhatsApp, ou "" se não for um número válido. */
+export function phoneForInput(phone: string | null | undefined): string {
+  const e164 = phone ? normalizeBrPhone(phone) : null;
+  return e164 ? formatBrPhone(e164) : "";
+}
+
 export function formatBrPhone(e164: string): string {
   const d = e164.replace(/^\+55/, "");
   return d.length === 11 ? `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}` : `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
