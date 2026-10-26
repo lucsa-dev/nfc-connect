@@ -117,6 +117,8 @@ Configuração no Supabase (Authentication):
    [`supabase/templates/magic_link.html`](supabase/templates/magic_link.html). O botão aponta para
    `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`, que abre direto a `/conta`
    em qualquer navegador (o modelo padrão manda o token no `#` da URL, que o app não lê).
+   Mesmo com o modelo padrão (em inglês), o link funciona: o Supabase volta com a sessão no `#` da URL e o
+   componente `SessionFromHash` (layout raiz) grava a sessão e abre a `/conta`.
 3. **SMTP Settings**: configure um SMTP próprio (ex.: Resend). O envio padrão do Supabase só entrega para e-mails da equipe do projeto e poucas mensagens por hora.
 
 ## Métricas do Google Maps (Apify)

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Poppins } from "next/font/google";
+import { SessionFromHash } from "@/components/auth/session-from-hash";
 import { Providers } from "@/components/theme/providers";
 import { getSiteUrl } from "@/lib/urls";
 import "./globals.css";
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col">
         <Providers>{children}</Providers>
+        <SessionFromHash />
       </body>
     </html>
   );
