@@ -113,9 +113,10 @@ Na ativação, o dono informa e-mail e WhatsApp. Ele vira membro do negócio (`b
 Configuração no Supabase (Authentication):
 
 1. **URL Configuration** → Site URL: o domínio de produção (ex.: `https://toptap.com.br`).
-2. **Email Templates → Magic Link**: troque o link do modelo por
-   `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`
-   Assim o link funciona em qualquer navegador (o padrão só funciona no mesmo navegador que pediu).
+2. **Email Templates → Magic Link**: assunto "Seu link de acesso à TopTap" e, no corpo, o HTML de
+   [`supabase/templates/magic_link.html`](supabase/templates/magic_link.html). O botão aponta para
+   `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`, que abre direto a `/conta`
+   em qualquer navegador (o modelo padrão manda o token no `#` da URL, que o app não lê).
 3. **SMTP Settings**: configure um SMTP próprio (ex.: Resend). O envio padrão do Supabase só entrega para e-mails da equipe do projeto e poucas mensagens por hora.
 
 ## Métricas do Google Maps (Apify)
