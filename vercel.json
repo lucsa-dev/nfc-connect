@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/limpeza",
       "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/cron/relatorios",
+      "schedule": "0 8 * * *"
     }
   ]
 }

@@ -22,6 +22,7 @@ export type Database = {
           meta_pixel_id: string | null
           name: string
           owner_id: string
+          plan_expires_at: string | null
           place_id: string | null
           slug: string
           updated_at: string
@@ -34,6 +35,7 @@ export type Database = {
           meta_pixel_id?: string | null
           name: string
           owner_id?: string
+          plan_expires_at?: string | null
           place_id?: string | null
           slug: string
           updated_at?: string
@@ -46,6 +48,7 @@ export type Database = {
           meta_pixel_id?: string | null
           name?: string
           owner_id?: string
+          plan_expires_at?: string | null
           place_id?: string | null
           slug?: string
           updated_at?: string

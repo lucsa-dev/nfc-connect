@@ -178,6 +178,20 @@ export async function activateCard(rawCode: string, input: ActivationInput): Pro
     redirect(`/c/${code}/ativar`);
   }
 
+  // A peça vale um ano: começa ou renova o plano (relatório mensal) e traz os
+  // relatórios feitos na prospecção para o negócio.
+  const planExpiresAt = new Date();
+  planExpiresAt.setFullYear(planExpiresAt.getFullYear() + 1);
+  const { data: planned } = await supabase
+    .from("businesses")
+    .update({ plan_expires_at: planExpiresAt.toISOString() })
+    .eq("id", businessId)
+    .select("place_id")
+    .single();
+  if (planned?.place_id) {
+    await supabase.from("market_reports").update({ business_id: businessId }).eq("place_id", planned.place_id).is("business_id", null);
+  }
+
   // Métricas do Google: com a Places API já temos o perfil; sem ela, o scraper
   // (Apify) busca pelo nome e cidade depois da resposta (leva de 30 s a 2 min).
   // Num negócio já existente (2ª peça), só coleta se não houver coleta do dia.

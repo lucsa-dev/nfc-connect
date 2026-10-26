@@ -441,3 +441,28 @@ export function readMarketData(value: unknown): MarketData | null {
 export function readProspects(value: unknown): Prospect[] {
   return Array.isArray(value) ? (value as Prospect[]).filter((p) => p && typeof p.placeId === "string") : [];
 }
+
+// Relatório mensal ------------------------------------------------------------------
+
+/** Intervalo entre os relatórios mensais de um cliente com plano. */
+export const MONTHLY_REPORT_DAYS = 30;
+
+interface ReportSummary {
+  term: string;
+  area: string;
+  status: string;
+  created_at: string;
+}
+
+/**
+ * Busca (termo e região) do próximo relatório mensal, ou null se ainda não é
+ * hora. Vence 30 dias depois do último que não falhou e repete a busca do
+ * último pronto, para comparar mês a mês. Sem nenhum pronto: "sem_base".
+ */
+export function monthlyReportSearch(reports: ReportSummary[], now: Date): { term: string; area: string } | "sem_base" | null {
+  const sorted = reports.filter((r) => r.status !== "failed").sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const last = sorted[0];
+  if (last && now.getTime() - new Date(last.created_at).getTime() < MONTHLY_REPORT_DAYS * 86_400_000) return null;
+  const base = sorted.find((r) => r.status === "ready");
+  return base ? { term: base.term, area: base.area } : "sem_base";
+}

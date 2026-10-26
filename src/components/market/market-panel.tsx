@@ -3,8 +3,8 @@ import { ChevronRightIcon } from "lucide-react";
 import { ReportForm } from "@/components/market/market-actions";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatDateTime } from "@/lib/format";
-import { readMarketData } from "@/lib/market";
+import { formatDate, formatDateTime } from "@/lib/format";
+import { MONTHLY_REPORT_DAYS, readMarketData } from "@/lib/market";
 
 const STATUS: Record<string, string> = { running: "Buscando", failed: "Falhou" };
 
@@ -14,14 +14,18 @@ export function MarketPanel({
   defaultTerm,
   defaultArea,
   reports,
+  planExpiresAt,
   enabled,
 }: {
   businessId: string;
   defaultTerm: string;
   defaultArea: string;
   reports: Array<{ id: string; term: string; area: string; status: string; data: unknown; created_at: string }>;
+  /** Fim do plano (um ano após a ativação da peça): até lá, relatório mensal automático. */
+  planExpiresAt: string | null;
   enabled: boolean;
 }) {
+  const planActive = planExpiresAt !== null && new Date(planExpiresAt) > new Date();
   return (
     <Card className="mb-8">
       <CardHeader>
@@ -30,6 +34,21 @@ export function MarketPanel({
           Compara o negócio com os concorrentes da mesma busca no Google Maps: posição, avaliações, ritmo, respostas, horário e o que
           os clientes dizem. Gera um link para mandar ao dono.
         </p>
+        {planExpiresAt && (
+          <p className="text-sm">
+            {planActive ? (
+              <>
+                <Badge variant="secondary" className="mr-1.5">Plano ativo</Badge>
+                Relatório novo a cada {MONTHLY_REPORT_DAYS} dias, com a busca do último, até {formatDate(planExpiresAt)}.
+              </>
+            ) : (
+              <>
+                <Badge variant="outline" className="mr-1.5">Plano vencido</Badge>
+                Venceu em {formatDate(planExpiresAt)}: os relatórios mensais pararam.
+              </>
+            )}
+          </p>
+        )}
       </CardHeader>
       <CardContent className="grid gap-4">
         {enabled ? (

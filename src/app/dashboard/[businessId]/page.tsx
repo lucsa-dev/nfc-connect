@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: PageProps<"/dashboard/[busine
 export default async function BusinessPage({ params }: PageProps<"/dashboard/[businessId]">) {
   const { businessId } = await params;
   const [business, snapshots] = await Promise.all([getBusinessWithLinks(businessId), getPlaceSnapshots(businessId)]);
-  const reports = business.place_id ? await listReports({ businessId, placeId: business.place_id }, 5) : [];
+  const reports = business.place_id ? await listReports({ businessId, placeId: business.place_id }, 12) : [];
   const profile = snapshots[0] ? readPlaceProfile(snapshots[0].profile) : null;
   const siteUrl = getSiteUrl();
   const host = siteUrl.replace(/^https?:\/\//, "");
@@ -89,6 +89,7 @@ export default async function BusinessPage({ params }: PageProps<"/dashboard/[bu
           defaultTerm={profile?.category?.toLocaleLowerCase("pt-BR") ?? ""}
           defaultArea={[profile?.city, profile?.state].filter(Boolean).join(" - ")}
           reports={reports}
+          planExpiresAt={business.plan_expires_at}
           enabled={apifyEnabled()}
         />
       )}

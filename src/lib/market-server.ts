@@ -11,6 +11,7 @@ import {
   competitorFromProfile,
   distanceMeters,
   formatDistance,
+  monthlyReportSearch,
   rankProspects,
   readMarketData,
   type Competitor,
@@ -48,6 +49,8 @@ export interface ReportInput {
   name: string;
   term: string;
   area: string;
+  /** Dono do relatório quando não há usuário logado (cron). */
+  ownerId?: string;
 }
 
 /** Inicia a coleta dos concorrentes e cria o relatório (status "running"). */
@@ -56,6 +59,7 @@ export async function startReport(supabase: Client, input: ReportInput): Promise
   const { data, error } = await supabase
     .from("market_reports")
     .insert({
+      ...(input.ownerId && { owner_id: input.ownerId }),
       business_id: input.businessId,
       place_id: input.placeId,
       name: input.name.slice(0, 200),
@@ -124,6 +128,59 @@ export async function syncReport(supabase: Client, reportId: string): Promise<St
     .eq("status", "running");
   if (saveError) throw saveError;
   return "ready";
+}
+
+/**
+ * Relatório mensal dos clientes com plano valendo: finaliza os que ainda estão
+ * gerando e inicia um novo para quem teve o último há 30 dias ou mais, com a
+ * mesma busca (termo e região) do último relatório pronto. Sem relatório
+ * anterior não há busca para repetir: o primeiro é gerado no painel.
+ */
+export async function runMonthlyReports(supabase: Client, now = new Date()) {
+  const { data: running } = await supabase
+    .from("market_reports")
+    .select("id")
+    .eq("status", "running")
+    .not("business_id", "is", null);
+  let finished = 0;
+  for (const r of running ?? []) {
+    const status = await syncReport(supabase, r.id).catch((error) => {
+      console.error("Falha ao conferir o relatório", r.id, error);
+      return "running" as const;
+    });
+    if (status !== "running") finished++;
+  }
+
+  const { data: businesses, error } = await supabase
+    .from("businesses")
+    .select("id, owner_id, name, place_id, market_reports(term, area, status, created_at)")
+    .gt("plan_expires_at", now.toISOString())
+    .not("place_id", "is", null);
+  if (error) throw error;
+
+  let started = 0;
+  const skipped: string[] = [];
+  for (const b of businesses) {
+    const search = monthlyReportSearch(b.market_reports, now);
+    if (!search) continue;
+    if (search === "sem_base") {
+      skipped.push(b.name);
+      continue;
+    }
+    try {
+      await startReport(supabase, {
+        businessId: b.id,
+        placeId: b.place_id!,
+        name: b.name,
+        ...search,
+        ownerId: b.owner_id,
+      });
+      started++;
+    } catch (error) {
+      console.error("Falha ao iniciar o relatório mensal", b.id, error);
+    }
+  }
+  return { plans: businesses.length, finished, started, withoutReport: skipped };
 }
 
 export async function analyzeMarket(data: MarketData): Promise<MarketAnalysis | null> {

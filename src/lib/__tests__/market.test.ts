@@ -29,6 +29,7 @@ import {
   unansweredNegatives,
   type Competitor,
   type MarketData,
+  monthlyReportSearch,
 } from "@/lib/market";
 import { marketAnalysisInput, readMarketAnalysis } from "@/lib/market-analysis";
 import { gridPoints, parseTextSearchIds, rankIn, summarizeGrid, textSearchBody, type GridPoint } from "@/lib/rank-grid";
@@ -319,5 +320,37 @@ describe("perto de mim", () => {
   it("conta a apresentação do perfil na nota de oportunidade", () => {
     const { reasons } = opportunityScore(competitor({ website: false, description: false, hours: [], photos: 2 }), 200);
     expect(reasons).toContain("Perfil sem site, horário, fotos, descrição");
+  });
+});
+
+describe("monthlyReportSearch", () => {
+  const now = new Date("2026-10-26T12:00:00Z");
+  const report = (daysAgo: number, status = "ready", term = "padaria") => ({
+    term,
+    area: "Aldeota, Fortaleza",
+    status,
+    created_at: new Date(now.getTime() - daysAgo * 86_400_000).toISOString(),
+  });
+
+  it("espera 30 dias desde o último relatório", () => {
+    expect(monthlyReportSearch([report(29)], now)).toBeNull();
+    expect(monthlyReportSearch([report(30)], now)).toEqual({ term: "padaria", area: "Aldeota, Fortaleza" });
+  });
+
+  it("conta o que ainda está gerando, mas não o que falhou", () => {
+    expect(monthlyReportSearch([report(2, "running"), report(40)], now)).toBeNull();
+    expect(monthlyReportSearch([report(2, "failed"), report(40)], now)).not.toBeNull();
+  });
+
+  it("repete a busca do último relatório pronto", () => {
+    expect(monthlyReportSearch([report(60, "ready", "doceria"), report(35, "ready", "padaria")], now)).toEqual({
+      term: "padaria",
+      area: "Aldeota, Fortaleza",
+    });
+  });
+
+  it("sem relatório pronto não tem busca para repetir", () => {
+    expect(monthlyReportSearch([], now)).toBe("sem_base");
+    expect(monthlyReportSearch([report(40, "failed")], now)).toBe("sem_base");
   });
 });
