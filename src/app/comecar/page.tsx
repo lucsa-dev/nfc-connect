@@ -6,8 +6,8 @@ import { getSiteSettings } from "@/lib/settings";
 import { getSiteUrl } from "@/lib/urls";
 
 export const metadata: Metadata = {
-  title: "Monte sua placa",
-  description: "Encontre seu negócio no Google, veja o seu plano para conseguir mais avaliações e peça a sua placa TopTap.",
+  title: "Diagnóstico grátis",
+  description: "Encontre seu negócio no Google, veja onde você está no Maps e contrate 12 meses de monitoramento TopTap, com placa e relatório mensal.",
 };
 
 const siteUrl = getSiteUrl();

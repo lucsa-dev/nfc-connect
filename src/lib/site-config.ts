@@ -8,7 +8,7 @@ export const siteConfig = {
 };
 
 export const DEFAULT_CONTACT_MESSAGE =
-  "Olá! Quero saber mais sobre a placa TopTap de avaliação no Google para o meu negócio.";
+  "Olá! Quero saber mais sobre o monitoramento TopTap do meu negócio no Google Maps.";
 
 /** Link de contato: WhatsApp > e-mail > null (sem contato configurado). */
 export function contactHref(

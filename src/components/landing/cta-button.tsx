@@ -5,7 +5,7 @@ import { buttonVariants } from "@/components/ui/button";
 
 /** Botão principal: leva ao quiz de compra (/comecar). */
 export function CtaButton({
-  children = "Quero minha placa",
+  children = "Fazer diagnóstico grátis",
   size = "lg",
   variant = "default",
   className,
