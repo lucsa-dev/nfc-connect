@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRightIcon, LinkIcon } from "lucide-react";
 import { BusinessFormDialog } from "@/components/dashboard/business-form-dialog";
+import { CardModeSelect } from "@/components/dashboard/card-mode-select";
 import { ConfirmDelete } from "@/components/dashboard/confirm-delete";
 import { GooglePanel } from "@/components/dashboard/google-panel";
 import { MarketPanel } from "@/components/market/market-panel";
@@ -21,13 +22,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { apifyEnabled } from "@/lib/apify";
+import { getProduct } from "@/lib/card";
 import { getBusinessWithLinks, getPlaceSnapshots, listReports } from "@/lib/data";
 import { analysisEnabled, metricsEnabled, placesEnabled } from "@/lib/google";
-import { formatNumber } from "@/lib/format";
+import { formatDateTime, formatNumber } from "@/lib/format";
 import { readPlaceProfile } from "@/lib/places";
 import { LINK_TYPE_INFO } from "@/lib/link-types";
 import { buildPublicLinkUrl, getSiteUrl } from "@/lib/urls";
-import { createLink, deleteBusiness, updateBusiness } from "../actions";
+import { createLink, deleteBusiness, setCardLink, updateBusiness } from "../actions";
 
 // Server Actions desta página: busca no Maps (scraper, até ~4 min) e análise da IA.
 export const maxDuration = 300;
@@ -61,7 +63,7 @@ export default async function BusinessPage({ params }: PageProps<"/dashboard/[bu
           <>
             <BusinessFormDialog
               action={updateBusiness.bind(null, business.id)}
-              defaults={{ name: business.name, slug: business.slug, description: business.description }}
+              defaults={{ name: business.name, slug: business.slug, description: business.description, meta_pixel_id: business.meta_pixel_id }}
               siteUrl={siteUrl}
             />
             <ConfirmDelete
@@ -185,6 +187,46 @@ export default async function BusinessPage({ params }: PageProps<"/dashboard/[bu
             </TableBody>
           </Table>
         </Card>
+      )}
+
+      {business.cards.length > 0 && (
+        <section className="mt-8">
+          <div className="mb-3">
+            <h2 className="text-lg font-semibold">Peças</h2>
+            <p className="text-sm text-muted-foreground">
+              No automático, a peça vai direto para o link quando o negócio tem só um ativo e abre a{" "}
+              <a href={`${siteUrl}/${business.slug}`} target="_blank" rel="noreferrer" className="underline underline-offset-2">
+                página do negócio
+              </a>{" "}
+              quando tem mais de um.
+            </p>
+          </div>
+          <Card className="py-0">
+            <ul className="divide-y">
+              {business.cards.map((card) => (
+                <li key={card.id} className="grid gap-2 p-4 sm:grid-cols-[1fr_16rem] sm:items-center">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-baseline gap-x-2">
+                      <span className="font-medium">{getProduct(card.batch?.product).kind === "plaque" ? "Placa" : "Cartão"}</span>
+                      <code className="text-xs text-muted-foreground">{card.code}</code>
+                    </div>
+                    <div className="text-xs text-muted-foreground tabular-nums">
+                      {formatNumber(card.visit_count)} {card.visit_count === 1 ? "acesso" : "acessos"}
+                      {card.activated_at && ` · ativada em ${formatDateTime(card.activated_at)}`}
+                    </div>
+                  </div>
+                  <CardModeSelect
+                    cardId={card.id}
+                    value={card.direct_link_id}
+                    links={business.links}
+                    action={setCardLink.bind(null, business.id)}
+                    label={`Destino da peça ${card.code}`}
+                  />
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </section>
       )}
     </>
   );

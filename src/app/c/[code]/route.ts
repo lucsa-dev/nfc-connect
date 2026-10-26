@@ -1,5 +1,6 @@
 import { after } from "next/server";
 import { resolveCard, type CardRepository } from "@/lib/cards";
+import { redirectResponse } from "@/lib/redirect";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // Sempre dinâmico: cada acesso precisa ser contado.
@@ -11,15 +12,11 @@ function repository(): CardRepository {
     async findCard(code) {
       const { data, error } = await supabase
         .from("cards")
-        .select("code, link:links(id, business_id, url, type, pix_key, is_active, slug, business:businesses(slug))")
+        .select("id, code, direct_link_id, business:businesses(slug, meta_pixel_id, links(id, business_id, url, type, pix_key, slug, is_active))")
         .eq("code", code)
         .maybeSingle();
       if (error) throw new Error(`${error.code} ${error.message}`);
-      if (!data) return null;
-      const link = data.link;
-      if (!link?.business) return { code: data.code, link: null };
-      const { business, ...rest } = link;
-      return { code: data.code, link: { ...rest, business_slug: business.slug } };
+      return data;
     },
     async recordVisit(link, visit) {
       const { error } = await supabase
@@ -60,13 +57,7 @@ export async function GET(request: Request, ctx: RouteContext<"/c/[code]">) {
   // Registra o acesso depois de enviar o redirecionamento (waitUntil na Vercel).
   if (decision.kind === "redirect") after(decision.record);
 
-  return new Response(null, {
-    status: 302,
-    headers: {
-      Location: decision.location,
-      // Sem cache: a peça muda de destino ao ser ativada e cada acesso é contado.
-      "Cache-Control": "no-store, max-age=0",
-      "Referrer-Policy": "no-referrer",
-    },
-  });
+  // A ativação nunca passa pelo Pixel (a peça ainda não é de nenhum negócio) e a
+  // página do negócio dispara o Pixel ela mesma.
+  return redirectResponse(decision.location, decision.kind === "redirect" ? decision.pixelId : null);
 }

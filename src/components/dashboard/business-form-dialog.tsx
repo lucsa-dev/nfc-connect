@@ -26,6 +26,7 @@ interface BusinessDefaults {
   name: string;
   slug: string;
   description: string | null;
+  meta_pixel_id: string | null;
 }
 
 function BusinessForm({
@@ -86,6 +87,21 @@ function BusinessForm({
           rows={3}
           defaultValue={state.values?.description ?? defaults?.description ?? ""}
           placeholder="Contato, endereço, detalhes do pedido..."
+        />
+      </Field>
+      <Field
+        id="business-pixel"
+        label="Pixel do Meta"
+        errors={errors.meta_pixel_id}
+        hint="Opcional. ID do Pixel do cliente: os acessos às peças entram no público dele para anúncios."
+      >
+        <Input
+          id="business-pixel"
+          name="meta_pixel_id"
+          inputMode="numeric"
+          defaultValue={state.values?.meta_pixel_id ?? defaults?.meta_pixel_id ?? ""}
+          placeholder="1234567890123456"
+          aria-invalid={Boolean(errors.meta_pixel_id)}
         />
       </Field>
       <DialogFooter>

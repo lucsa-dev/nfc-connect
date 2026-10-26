@@ -27,7 +27,7 @@ export default async function ActivatePage({ params }: PageProps<"/c/[code]/ativ
   const supabase = createAdminClient();
   const { data: card, error } = await supabase
     .from("cards")
-    .select("code, batch:card_batches(product), link:links(url, business:businesses(name))")
+    .select("code, batch:card_batches(product), business:businesses(name, links(url, type, is_active))")
     .eq("code", code)
     .maybeSingle();
   // Erro do banco não é "cartão não encontrado": deixa aparecer nos logs.
@@ -35,7 +35,8 @@ export default async function ActivatePage({ params }: PageProps<"/c/[code]/ativ
   if (!card) notFound();
 
   const piece = getProduct(card.batch?.product).kind === "plaque" ? "placa" : "cartão";
-  const business = card.link?.business;
+  const business = card.business;
+  const reviewUrl = business?.links.find((l) => l.type === "review" && l.is_active)?.url;
 
   return (
     <main className="flex min-h-dvh flex-col items-center bg-brand-surface px-4 py-10">
@@ -54,8 +55,8 @@ export default async function ActivatePage({ params }: PageProps<"/c/[code]/ativ
             <p className="text-sm text-muted-foreground">
               Teste agora: aproxime o celular da {piece} ou escaneie o QR Code. Deve abrir a tela de avaliação no Google.
             </p>
-            {card.link?.url && (
-              <Button size="lg" nativeButton={false} render={<a href={card.link.url} />}>
+            {reviewUrl && (
+              <Button size="lg" nativeButton={false} render={<a href={reviewUrl} />}>
                 <StarIcon /> Abrir avaliação
               </Button>
             )}

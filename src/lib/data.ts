@@ -29,9 +29,10 @@ export async function getBusinessWithLinks(businessId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("businesses")
-    .select("*, links(*)")
+    .select("*, links(*), cards(id, code, direct_link_id, visit_count, activated_at, batch:card_batches(product))")
     .eq("id", businessId)
     .order("created_at", { referencedTable: "links", ascending: true })
+    .order("activated_at", { referencedTable: "cards", ascending: true })
     .maybeSingle();
   if (error && error.code !== "22P02") throw error; // 22P02: id não é UUID
   if (!data) notFound();
@@ -121,13 +122,13 @@ export async function listBatches() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("card_batches")
-    .select("id, name, product, style, quantity, created_at, cards(link_id)")
+    .select("id, name, product, style, quantity, created_at, cards(business_id)")
     .order("created_at", { ascending: false })
     .limit(200);
   if (error) throw error;
   return data.map(({ cards, ...batch }) => ({
     ...batch,
-    activated: cards.filter((c) => c.link_id).length,
+    activated: cards.filter((c) => c.business_id).length,
   }));
 }
 
@@ -135,7 +136,7 @@ export async function getBatch(batchId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("card_batches")
-    .select("*, cards(id, code, position, activated_at, link_id, link:links(id, click_count, business:businesses(id, name)))")
+    .select("*, cards(id, code, position, activated_at, visit_count, business:businesses(id, name))")
     .eq("id", batchId)
     .order("position", { referencedTable: "cards", ascending: true })
     .maybeSingle();

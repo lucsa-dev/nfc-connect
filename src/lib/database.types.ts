@@ -8,8 +8,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.18"
   }
@@ -21,6 +19,7 @@ export type Database = {
           description: string | null
           id: string
           maps_query: string | null
+          meta_pixel_id: string | null
           name: string
           owner_id: string
           place_id: string | null
@@ -32,6 +31,7 @@ export type Database = {
           description?: string | null
           id?: string
           maps_query?: string | null
+          meta_pixel_id?: string | null
           name: string
           owner_id?: string
           place_id?: string | null
@@ -43,6 +43,7 @@ export type Database = {
           description?: string | null
           id?: string
           maps_query?: string | null
+          meta_pixel_id?: string | null
           name?: string
           owner_id?: string
           place_id?: string | null
@@ -85,32 +86,38 @@ export type Database = {
         Row: {
           activated_at: string | null
           batch_id: string
+          business_id: string | null
           code: string
           created_at: string
+          direct_link_id: string | null
           id: string
-          link_id: string | null
           owner_id: string
           position: number
+          visit_count: number
         }
         Insert: {
           activated_at?: string | null
           batch_id: string
+          business_id?: string | null
           code: string
           created_at?: string
+          direct_link_id?: string | null
           id?: string
-          link_id?: string | null
           owner_id?: string
           position: number
+          visit_count?: number
         }
         Update: {
           activated_at?: string | null
           batch_id?: string
+          business_id?: string | null
           code?: string
           created_at?: string
+          direct_link_id?: string | null
           id?: string
-          link_id?: string | null
           owner_id?: string
           position?: number
+          visit_count?: number
         }
         Relationships: [
           {
@@ -121,11 +128,18 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "cards_link_id_fkey"
-            columns: ["link_id"]
-            isOneToOne: true
-            referencedRelation: "links"
+            foreignKeyName: "cards_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cards_direct_link_fkey"
+            columns: ["direct_link_id", "business_id"]
+            isOneToOne: false
+            referencedRelation: "links"
+            referencedColumns: ["id", "business_id"]
           },
         ]
       }
@@ -253,6 +267,7 @@ export type Database = {
           browser: string | null
           browser_version: string | null
           business_id: string
+          card_id: string | null
           city: string | null
           country: string | null
           created_at: string
@@ -263,7 +278,7 @@ export type Database = {
           is_bot: boolean
           language: string | null
           latitude: number | null
-          link_id: string
+          link_id: string | null
           longitude: number | null
           os: string | null
           os_version: string | null
@@ -276,6 +291,7 @@ export type Database = {
           browser?: string | null
           browser_version?: string | null
           business_id: string
+          card_id?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
@@ -286,7 +302,7 @@ export type Database = {
           is_bot?: boolean
           language?: string | null
           latitude?: number | null
-          link_id: string
+          link_id?: string | null
           longitude?: number | null
           os?: string | null
           os_version?: string | null
@@ -299,6 +315,7 @@ export type Database = {
           browser?: string | null
           browser_version?: string | null
           business_id?: string
+          card_id?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
@@ -309,7 +326,7 @@ export type Database = {
           is_bot?: boolean
           language?: string | null
           latitude?: number | null
-          link_id?: string
+          link_id?: string | null
           longitude?: number | null
           os?: string | null
           os_version?: string | null
@@ -324,6 +341,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "link_visits_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
             referencedColumns: ["id"]
           },
           {
@@ -352,6 +376,8 @@ export type Database = {
           type: Database["public"]["Enums"]["link_type"]
           updated_at: string
           url: string | null
+          wifi_password: string | null
+          wifi_ssid: string | null
         }
         Insert: {
           business_id: string
@@ -369,6 +395,8 @@ export type Database = {
           type?: Database["public"]["Enums"]["link_type"]
           updated_at?: string
           url?: string | null
+          wifi_password?: string | null
+          wifi_ssid?: string | null
         }
         Update: {
           business_id?: string
@@ -386,6 +414,8 @@ export type Database = {
           type?: Database["public"]["Enums"]["link_type"]
           updated_at?: string
           url?: string | null
+          wifi_password?: string | null
+          wifi_ssid?: string | null
         }
         Relationships: [
           {
@@ -654,7 +684,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      link_type: "review" | "pix" | "business_card" | "other"
+      link_type: "review" | "pix" | "business_card" | "other" | "wifi"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -670,12 +700,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -699,11 +729,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -724,11 +754,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -749,11 +779,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -766,11 +796,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never) = never,
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -782,7 +812,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      link_type: ["review", "pix", "business_card", "other"],
+      link_type: ["review", "pix", "business_card", "other", "wifi"],
     },
   },
 } as const
+

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { resolveRedirect, type LinkRepository, type ResolvedLink } from "@/lib/redirect";
+import { redirectResponse, resolveRedirect, type LinkRepository, type ResolvedLink } from "@/lib/redirect";
 
 const link: ResolvedLink = {
   id: "link-1",
@@ -7,6 +7,7 @@ const link: ResolvedLink = {
   url: "https://g.page/r/abc/review",
   type: "review",
   pix_key: null,
+  meta_pixel_id: null,
 };
 
 function repoWith(found: ResolvedLink | null) {
@@ -35,6 +36,7 @@ describe("resolveRedirect", () => {
     expect(decision.kind).toBe("redirect");
     if (decision.kind !== "redirect") return;
     expect(decision.location).toBe(link.url);
+    expect(decision.pixelId).toBeNull();
     expect(repo.recordVisit).not.toHaveBeenCalled();
 
     await decision.record();
@@ -77,5 +79,49 @@ describe("resolveRedirect", () => {
     });
     expect(decision.kind).toBe("not_found");
     expect(repo.findActiveLink).not.toHaveBeenCalled();
+  });
+
+  it("devolve o Pixel do negócio só quando o ID é válido", async () => {
+    const resolve = (meta_pixel_id: string | null) =>
+      resolveRedirect({
+        businessSlug: "padaria",
+        linkSlug: "avaliacao",
+        request: request("/padaria/avaliacao"),
+        repo: repoWith({ ...link, meta_pixel_id }),
+        ipSalt: "salt",
+      });
+    expect(await resolve("1234567890123456")).toMatchObject({ kind: "redirect", pixelId: "1234567890123456" });
+    expect(await resolve("abc")).toMatchObject({ kind: "redirect", pixelId: null });
+  });
+});
+
+describe("redirectResponse", () => {
+  it("sem Pixel, redireciona direto com 302", () => {
+    const res = redirectResponse(link.url!);
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe(link.url);
+    expect(res.headers.get("cache-control")).toContain("no-store");
+  });
+
+  it("com Pixel, devolve a página de passagem sem cache", async () => {
+    const res = redirectResponse(link.url!, "1234567890123456");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("location")).toBeNull();
+    expect(res.headers.get("content-type")).toContain("text/html");
+    expect(res.headers.get("cache-control")).toContain("no-store");
+    const html = await res.text();
+    expect(html).toContain("fbq('init', '1234567890123456')");
+    expect(html).toContain(JSON.stringify(link.url));
+  });
+
+  it("cliques vindos da página do negócio não passam de novo pelo Pixel", async () => {
+    const decision = await resolveRedirect({
+      businessSlug: "padaria",
+      linkSlug: "avaliacao",
+      request: request("/padaria/avaliacao?de=pagina"),
+      repo: repoWith({ ...link, meta_pixel_id: "1234567890123456" }),
+      ipSalt: "salt",
+    });
+    expect(decision).toMatchObject({ kind: "redirect", pixelId: null });
   });
 });

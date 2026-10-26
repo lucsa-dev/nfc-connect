@@ -1,5 +1,5 @@
 import { after } from "next/server";
-import { resolveRedirect, type LinkRepository } from "@/lib/redirect";
+import { redirectResponse, resolveRedirect, type LinkRepository } from "@/lib/redirect";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // Sempre dinâmico: cada acesso precisa ser contado.
@@ -11,13 +11,15 @@ function repository(): LinkRepository {
     async findActiveLink(businessSlug, linkSlug) {
       const { data, error } = await supabase
         .from("links")
-        .select("id, business_id, url, type, pix_key, businesses!inner(slug)")
+        .select("id, business_id, url, type, pix_key, businesses!inner(slug, meta_pixel_id)")
         .eq("businesses.slug", businessSlug)
         .eq("slug", linkSlug)
         .eq("is_active", true)
         .maybeSingle();
       if (error) throw error;
-      return data;
+      if (!data) return null;
+      const { businesses, ...link } = data;
+      return { ...link, meta_pixel_id: businesses.meta_pixel_id };
     },
     async recordVisit(link, visit) {
       const { error } = await supabase
@@ -49,13 +51,5 @@ export async function GET(request: Request, ctx: RouteContext<"/[business]/[link
   // Registra o acesso depois de enviar o redirecionamento (waitUntil na Vercel).
   after(decision.record);
 
-  return new Response(null, {
-    status: 302,
-    headers: {
-      Location: decision.location,
-      // Sem cache: navegador/CDN não podem pular a contagem.
-      "Cache-Control": "no-store, max-age=0",
-      "Referrer-Policy": "no-referrer",
-    },
-  });
+  return redirectResponse(decision.location, decision.pixelId);
 }

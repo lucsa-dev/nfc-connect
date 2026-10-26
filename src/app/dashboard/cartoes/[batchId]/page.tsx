@@ -29,7 +29,7 @@ export default async function BatchPage({ params }: Props) {
   const batch = await getBatch(batchId);
   const siteUrl = getSiteUrl();
   const product = getProduct(batch.product);
-  const activated = batch.cards.filter((c) => c.link_id).length;
+  const activated = batch.cards.filter((c) => c.business).length;
 
   return (
     <>
@@ -71,7 +71,7 @@ export default async function BatchPage({ params }: Props) {
         <ul className="divide-y md:hidden">
           {batch.cards.map((card) => {
             const url = buildCardUrl(siteUrl, card.code);
-            const business = card.link?.business;
+            const business = card.business;
             return (
               <li key={card.id} className="grid gap-2 p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -90,9 +90,9 @@ export default async function BatchPage({ params }: Props) {
                       <Badge variant="outline">Em branco</Badge>
                     )}
                   </div>
-                  {card.link && (
+                  {business && (
                     <span className="shrink-0 text-sm text-muted-foreground tabular-nums">
-                      {formatNumber(card.link.click_count)} {card.link.click_count === 1 ? "acesso" : "acessos"}
+                      {formatNumber(card.visit_count)} {card.visit_count === 1 ? "acesso" : "acessos"}
                     </span>
                   )}
                 </div>
@@ -116,7 +116,7 @@ export default async function BatchPage({ params }: Props) {
           <TableBody>
             {batch.cards.map((card) => {
               const url = buildCardUrl(siteUrl, card.code);
-              const business = card.link?.business;
+              const business = card.business;
               return (
                 <TableRow key={card.id}>
                   <TableCell className="text-muted-foreground tabular-nums">{card.position}</TableCell>
@@ -140,7 +140,7 @@ export default async function BatchPage({ params }: Props) {
                       <Badge variant="outline">Em branco</Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">{card.link ? formatNumber(card.link.click_count) : "—"}</TableCell>
+                  <TableCell className="text-right tabular-nums">{business ? formatNumber(card.visit_count) : "—"}</TableCell>
                 </TableRow>
               );
             })}

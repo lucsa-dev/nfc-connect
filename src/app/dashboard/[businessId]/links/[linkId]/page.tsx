@@ -61,7 +61,8 @@ export default async function LinkPage({ params, searchParams }: Props) {
   const { business } = link;
   const nfcUrl = buildPublicLinkUrl(siteUrl, business.slug, link.slug);
   const qrUrl = buildPublicLinkUrl(siteUrl, business.slug, link.slug, "qr");
-  const destination = link.url ?? `${nfcUrl}/pix`;
+  const isWifi = link.type === "wifi";
+  const destination = link.url ?? `${nfcUrl}/${isWifi ? "wifi" : "pix"}`;
   const basePath = `/dashboard/${business.id}/links/${link.id}`;
   const recent = visits.filter((v) => !v.is_bot).slice(0, 25);
 
@@ -116,8 +117,13 @@ export default async function LinkPage({ params, searchParams }: Props) {
                 className="flex items-center gap-1.5 truncate text-sm text-primary hover:underline"
               >
                 <ExternalLinkIcon className="size-3.5 shrink-0" />
-                <span className="truncate">{link.url ?? "Página de Pix Copia e Cola"}</span>
+                <span className="truncate">{link.url ?? (isWifi ? "Página do Wi-Fi" : "Página de Pix Copia e Cola")}</span>
               </a>
+              {isWifi && link.wifi_ssid && (
+                <p className="text-xs text-muted-foreground">
+                  Rede {link.wifi_ssid} · {link.wifi_password ? "com senha" : "aberta"}
+                </p>
+              )}
               {!link.url && link.pix_key && (
                 <p className="text-xs text-muted-foreground">
                   Chave {link.pix_key} · {link.pix_name} · {link.pix_city}

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { buildCardUrl, CODE_ALPHABET, CODE_PATTERN, generateCode, normalizeCode, resolveCard, type CardRepository, type ResolvedCard } from "@/lib/cards";
+import { buildCardUrl, CODE_ALPHABET, CODE_PATTERN, generateCode, normalizeCode, pickCardLink, resolveCard, type CardLink, type CardRepository, type ResolvedCard } from "@/lib/cards";
 
 function repoWith(found: ResolvedCard | null) {
   return {
@@ -8,16 +8,23 @@ function repoWith(found: ResolvedCard | null) {
   } satisfies CardRepository;
 }
 
-const activeLink = {
+const review: CardLink = {
   id: "link-1",
   business_id: "biz-1",
   url: "https://search.google.com/local/writereview?placeid=abc",
   type: "review",
   pix_key: null,
   is_active: true,
-  slug: "k7m2p9qa",
-  business_slug: "padaria-central",
+  slug: "avaliacao",
 };
+const wifi: CardLink = { ...review, id: "link-2", type: "wifi", url: null, slug: "wifi" };
+
+const card = (links: CardLink[], direct_link_id: string | null = null, meta_pixel_id: string | null = null): ResolvedCard => ({
+  id: "card-1",
+  code: "k7m2p9qa",
+  direct_link_id,
+  business: { slug: "padaria-central", meta_pixel_id, links },
+});
 
 const request = (path: string) => new Request(`https://cards.com.br${path}`, { headers: { "user-agent": "Mozilla/5.0 (iPhone)" } });
 
@@ -59,29 +66,55 @@ describe("normalizeCode e buildCardUrl", () => {
   });
 });
 
+describe("pickCardLink", () => {
+  it("automático: vai direto quando há um só link ativo, senão abre a página", () => {
+    expect(pickCardLink(null, [review])).toBe(review);
+    expect(pickCardLink(null, [review, { ...wifi, is_active: false }])).toBe(review);
+    expect(pickCardLink(null, [review, wifi])).toBeNull();
+    expect(pickCardLink(null, [])).toBeNull();
+  });
+
+  it("direto: vai para o link fixado enquanto ele estiver ativo", () => {
+    expect(pickCardLink("link-2", [review, wifi])).toBe(wifi);
+    expect(pickCardLink("link-2", [review, { ...wifi, is_active: false }])).toBe(review);
+    expect(pickCardLink("apagado", [review, wifi])).toBeNull();
+  });
+});
+
 describe("resolveCard", () => {
   it("peça em branco leva à ativação, sem registrar acesso", async () => {
-    const repo = repoWith({ code: "k7m2p9qa", link: null });
+    const repo = repoWith({ id: "card-1", code: "k7m2p9qa", direct_link_id: null, business: null });
     const decision = await resolveCard({ code: "K7M2P9QA", request: request("/c/K7M2P9QA?s=qr"), repo, ipSalt: "s" });
     expect(repo.findCard).toHaveBeenCalledWith("k7m2p9qa");
     expect(decision).toEqual({ kind: "activate", location: "https://cards.com.br/c/k7m2p9qa/ativar" });
     expect(repo.recordVisit).not.toHaveBeenCalled();
   });
 
-  it("peça ativada redireciona para o link e registra o acesso com a origem", async () => {
-    const repo = repoWith({ code: "k7m2p9qa", link: activeLink });
+  it("com um link, redireciona e registra o acesso com a peça e a origem", async () => {
+    const repo = repoWith(card([review], null, "1234567890123456"));
     const decision = await resolveCard({ code: "k7m2p9qa", request: request("/c/k7m2p9qa?s=qr"), repo, ipSalt: "s" });
-    expect(decision.kind).toBe("redirect");
+    expect(decision).toMatchObject({ kind: "redirect", location: review.url, pixelId: "1234567890123456" });
     if (decision.kind !== "redirect") return;
-    expect(decision.location).toBe(activeLink.url);
     await decision.record();
-    expect(repo.recordVisit).toHaveBeenCalledWith(activeLink, expect.objectContaining({ source: "qr" }));
+    expect(repo.recordVisit).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "link-1" }),
+      expect.objectContaining({ source: "qr", card_id: "card-1" }),
+    );
   });
 
-  it("link desativado ou código inexistente dá 404", async () => {
-    const inactive = repoWith({ code: "k7m2p9qa", link: { ...activeLink, is_active: false } });
-    expect(await resolveCard({ code: "k7m2p9qa", request: request("/c/k7m2p9qa"), repo: inactive, ipSalt: "s" })).toEqual({ kind: "not_found" });
+  it("fixada no Wi-Fi, vai para a página do Wi-Fi", async () => {
+    const decision = await resolveCard({ code: "k7m2p9qa", request: request("/c/k7m2p9qa"), repo: repoWith(card([review, wifi], "link-2")), ipSalt: "s" });
+    expect(decision).toMatchObject({ kind: "redirect", location: "https://cards.com.br/padaria-central/wifi/wifi" });
+  });
 
+  it("com vários links no automático, abre a página do negócio com a peça e a origem", async () => {
+    const repo = repoWith(card([review, wifi]));
+    const decision = await resolveCard({ code: "k7m2p9qa", request: request("/c/k7m2p9qa?s=qr&x=1"), repo, ipSalt: "s" });
+    expect(decision).toEqual({ kind: "page", location: "https://cards.com.br/padaria-central?c=k7m2p9qa&s=qr" });
+    expect(repo.recordVisit).not.toHaveBeenCalled();
+  });
+
+  it("código inexistente ou inválido dá 404", async () => {
     const missing = repoWith(null);
     expect(await resolveCard({ code: "k7m2p9qa", request: request("/c/k7m2p9qa"), repo: missing, ipSalt: "s" })).toEqual({ kind: "not_found" });
 

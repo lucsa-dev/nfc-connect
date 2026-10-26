@@ -3,7 +3,6 @@
 import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { getProduct } from "@/lib/card";
 import { normalizeCode } from "@/lib/cards";
 import { analyzeSnapshot, collectProfiles, fetchPlaceProfile, metricsEnabled, saveSnapshot, storeProfiles } from "@/lib/google";
 import { businessSlugCandidates, mapsQueryOf } from "@/lib/leads";
@@ -46,10 +45,27 @@ async function createBusiness(
   return null;
 }
 
+/** Link de avaliação do negócio: "avaliacao" ou, se já existir, com o código da peça. */
+async function createReviewLink(supabase: Admin, businessId: string, url: string, code: string) {
+  for (const slug of ["avaliacao", `avaliacao-${code}`]) {
+    const { data, error } = await supabase
+      .from("links")
+      .insert({ business_id: businessId, name: "Avaliação no Google", slug, type: "review", url })
+      .select("id")
+      .single();
+    if (!error) return data.id;
+    if (error.code !== "23505") {
+      console.error("Falha ao criar link de avaliação", error);
+      break;
+    }
+  }
+  return null;
+}
+
 /**
  * Ativa uma peça em branco: qualquer pessoa com a peça em mãos pode ativar.
  * Vira um negócio do dono do lote (ou reaproveita o mesmo lugar do Google /
- * o mesmo link de avaliação), e a peça ganha o próprio link de avaliação.
+ * o mesmo link de avaliação), e a peça passa a apontar para o negócio.
  */
 export async function activateCard(rawCode: string, input: ActivationInput): Promise<ActivationResult> {
   const code = normalizeCode(rawCode);
@@ -58,11 +74,11 @@ export async function activateCard(rawCode: string, input: ActivationInput): Pro
   const supabase = createAdminClient();
   const { data: card } = await supabase
     .from("cards")
-    .select("id, owner_id, link_id, batch:card_batches(product)")
+    .select("id, owner_id, business_id")
     .eq("code", code)
     .maybeSingle();
   if (!card) return { ok: false, message: "Cartão não encontrado." };
-  if (card.link_id) redirect(`/c/${code}/ativar`);
+  if (card.business_id) redirect(`/c/${code}/ativar`);
 
   let businessId: string | null = null;
   let createdBusiness = false;
@@ -130,27 +146,34 @@ export async function activateCard(rawCode: string, input: ActivationInput): Pro
   }
   if (!businessId) return { ok: false, message: "Não foi possível cadastrar o negócio. Fale com a TopTap." };
 
-  const piece = getProduct(card.batch?.product).kind === "plaque" ? "Placa" : "Cartão";
-  const { data: link, error: linkError } = await supabase
+  // As peças do mesmo negócio compartilham o link de avaliação.
+  const { data: existingLink } = await supabase
     .from("links")
-    .insert({ business_id: businessId, name: `${piece} ${code}`, slug: code, type: "review", url: destination })
     .select("id")
-    .single();
-  if (linkError) {
-    console.error("Falha ao criar link da peça", linkError);
-    if (createdBusiness) await supabase.from("businesses").delete().eq("id", businessId);
-    return { ok: false, message: "Não foi possível ativar o cartão. Tente de novo." };
+    .eq("business_id", businessId)
+    .eq("type", "review")
+    .eq("url", destination)
+    .limit(1)
+    .maybeSingle();
+  let createdLinkId: string | null = null;
+  if (!existingLink) {
+    createdLinkId = await createReviewLink(supabase, businessId, destination, code);
+    if (!createdLinkId) {
+      if (createdBusiness) await supabase.from("businesses").delete().eq("id", businessId);
+      return { ok: false, message: "Não foi possível ativar o cartão. Tente de novo." };
+    }
   }
 
-  // Só ativa se ninguém ativou no meio do caminho.
+  // Só ativa se ninguém ativou no meio do caminho. Fica no automático: vai
+  // direto para a avaliação enquanto for o único link do negócio.
   const { data: claimed } = await supabase
     .from("cards")
-    .update({ link_id: link.id, activated_at: new Date().toISOString() })
+    .update({ business_id: businessId, activated_at: new Date().toISOString() })
     .eq("id", card.id)
-    .is("link_id", null)
+    .is("business_id", null)
     .select("id");
   if (!claimed?.length) {
-    await supabase.from("links").delete().eq("id", link.id);
+    if (createdLinkId) await supabase.from("links").delete().eq("id", createdLinkId);
     if (createdBusiness) await supabase.from("businesses").delete().eq("id", businessId);
     redirect(`/c/${code}/ativar`);
   }

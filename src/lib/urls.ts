@@ -3,6 +3,16 @@ export type VisitSource = "nfc" | "qr";
 /** Parâmetro de query que identifica a origem do acesso no link público. */
 export const SOURCE_PARAM = "s";
 
+/** Código da peça que abriu a página do negócio (/{negocio}?c=...). */
+export const CARD_PARAM = "c";
+
+/**
+ * Marca os cliques vindos da página do negócio (?de=pagina): o Pixel já
+ * disparou nela, então o link redireciona direto, sem a página de passagem.
+ */
+export const VIA_PARAM = "de";
+export const VIA_PAGE = "pagina";
+
 /**
  * URL base pública. Ordem: NEXT_PUBLIC_SITE_URL > domínio de produção da
  * Vercel > URL do deploy da Vercel > fallback (ex.: origin da requisição).

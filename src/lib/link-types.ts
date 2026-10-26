@@ -1,4 +1,4 @@
-export const LINK_TYPES = ["review", "pix", "business_card", "other"] as const;
+export const LINK_TYPES = ["review", "pix", "wifi", "business_card", "other"] as const;
 export type LinkType = (typeof LINK_TYPES)[number];
 
 export const LINK_TYPE_INFO: Record<
@@ -15,6 +15,11 @@ export const LINK_TYPE_INFO: Record<
     product: "Cartão de pagamento Pix",
     urlHint:
       "Opcional: link de pagamento do banco. Se vazio, usamos a chave Pix abaixo.",
+  },
+  wifi: {
+    label: "Wi-Fi",
+    product: "Wi-Fi",
+    urlHint: "",
   },
   business_card: {
     label: "Cartão de visita",

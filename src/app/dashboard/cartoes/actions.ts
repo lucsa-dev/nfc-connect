@@ -72,7 +72,7 @@ export async function deleteBatch(batchId: string): Promise<ActionState> {
     .from("cards")
     .select("id", { count: "exact", head: true })
     .eq("batch_id", batchId)
-    .not("link_id", "is", null);
+    .not("business_id", "is", null);
   if (count) return { message: "Este lote tem peças ativadas e não pode ser excluído." };
 
   const { error } = await supabase.from("card_batches").delete().eq("id", batchId);

@@ -17,8 +17,8 @@ export async function GET(_request: Request, ctx: RouteContext<"/dashboard/carto
     produto: getProduct(batch.product).label,
     link_nfc: buildCardUrl(siteUrl, card.code),
     link_qr: buildCardUrl(siteUrl, card.code, "qr"),
-    status: card.link_id ? "ativada" : "em branco",
-    negocio: card.link?.business?.name ?? "",
+    status: card.business ? "ativada" : "em branco",
+    negocio: card.business?.name ?? "",
     ativada_em: card.activated_at ?? "",
   }));
 

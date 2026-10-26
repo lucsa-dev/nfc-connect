@@ -128,6 +128,12 @@ export const CARD_COPY: Record<LinkType, CardCopy> = {
     cta: "Aproxime o celular",
     back: "Escaneie para pagar",
   },
+  wifi: {
+    headline: "Wi-Fi grátis",
+    subline: "Senha na tela do celular",
+    cta: "Aproxime o celular",
+    back: "Escaneie para conectar",
+  },
   business_card: {
     headline: "Vamos nos conectar?",
     subline: "Siga e acompanhe as novidades",

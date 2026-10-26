@@ -1,11 +1,10 @@
-import { resolveRedirect, type RedirectDecision, type ResolvedLink } from "@/lib/redirect";
-import { SOURCE_PARAM, type VisitSource } from "@/lib/urls";
-import type { VisitInfo } from "@/lib/visit";
+import { resolveRedirect, type RedirectDecision, type ResolvedLink, type VisitRecord } from "@/lib/redirect";
+import { CARD_PARAM, SOURCE_PARAM, type VisitSource } from "@/lib/urls";
 
 /**
  * Peças em branco (cartões e placas de um lote). Cada uma tem um código curto
  * gravado no chip NFC e no QR Code: /c/{codigo}. Em branco, leva à ativação;
- * ativada, funciona como o link de avaliação dela.
+ * ativada, leva a um link do negócio ou à página dele (ver pickCardLink).
  */
 
 /** Sem 0/1/i/l/o, para não confundir ao ler impresso. Igual ao check do banco. */
@@ -40,17 +39,34 @@ export function buildCardUrl(baseUrl: string, code: string, source?: VisitSource
   return source === "qr" ? `${url}?${SOURCE_PARAM}=qr` : url;
 }
 
+export interface CardLink extends Omit<ResolvedLink, "meta_pixel_id"> {
+  slug: string;
+  is_active: boolean;
+}
+
 export interface ResolvedCard {
+  id: string;
   code: string;
-  link: (ResolvedLink & { is_active: boolean; slug: string; business_slug: string }) | null;
+  direct_link_id: string | null;
+  /** Vazio = peça em branco. */
+  business: { slug: string; meta_pixel_id: string | null; links: CardLink[] } | null;
 }
 
 export interface CardRepository {
   findCard(code: string): Promise<ResolvedCard | null>;
-  recordVisit(link: ResolvedLink, visit: VisitInfo): Promise<void>;
+  recordVisit(link: ResolvedLink, visit: VisitRecord): Promise<void>;
 }
 
-export type CardDecision = RedirectDecision | { kind: "activate"; location: string };
+export type CardDecision = RedirectDecision | { kind: "activate" | "page"; location: string };
+
+/**
+ * Para onde a peça vai: o link fixado (se ainda ativo) ou, no automático, o
+ * único link ativo do negócio. Null = abrir a página do negócio.
+ */
+export function pickCardLink(directLinkId: string | null, links: CardLink[]): CardLink | null {
+  const active = links.filter((l) => l.is_active);
+  return active.find((l) => l.id === directLinkId) ?? (active.length === 1 ? active[0] : null);
+}
 
 export async function resolveCard(params: {
   code: string;
@@ -64,19 +80,30 @@ export async function resolveCard(params: {
   const card = await params.repo.findCard(code);
   if (!card) return { kind: "not_found" };
 
-  if (!card.link) {
+  if (!card.business) {
     const url = new URL(`/c/${code}/ativar`, params.request.url);
     return { kind: "activate", location: url.toString() };
   }
 
-  const link = card.link;
+  const { business } = card;
+  const link = pickCardLink(card.direct_link_id, business.links);
+  if (!link) {
+    // A página registra o acesso (com a peça) e dispara o Pixel.
+    const url = new URL(`/${business.slug}`, params.request.url);
+    const source = new URL(params.request.url).searchParams.get(SOURCE_PARAM);
+    url.searchParams.set(CARD_PARAM, code);
+    if (source) url.searchParams.set(SOURCE_PARAM, source);
+    return { kind: "page", location: url.toString() };
+  }
+
   return resolveRedirect({
-    businessSlug: link.business_slug,
+    businessSlug: business.slug,
     linkSlug: link.slug,
     request: params.request,
     ipSalt: params.ipSalt,
+    cardId: card.id,
     repo: {
-      findActiveLink: async () => (link.is_active ? link : null),
+      findActiveLink: async () => ({ ...link, meta_pixel_id: business.meta_pixel_id }),
       recordVisit: params.repo.recordVisit,
     },
   });

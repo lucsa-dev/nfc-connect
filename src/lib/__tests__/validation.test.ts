@@ -4,7 +4,7 @@ import { businessSchema, fieldErrorsOf, formDataToObject, linkSchema, loginSchem
 describe("businessSchema", () => {
   it("gera o slug a partir do nome quando vazio", () => {
     const r = businessSchema.parse({ name: "Padaria São João", slug: "" });
-    expect(r).toEqual({ name: "Padaria São João", slug: "padaria-sao-joao", description: null });
+    expect(r).toEqual({ name: "Padaria São João", slug: "padaria-sao-joao", description: null, meta_pixel_id: null });
   });
 
   it("aceita slug customizado em minúsculas", () => {
@@ -20,6 +20,13 @@ describe("businessSchema", () => {
     expect(reserved.success).toBe(false);
     if (!reserved.success)
       expect(fieldErrorsOf(reserved.error).slug?.[0]).toMatch(/reservado/);
+  });
+
+  it("aceita o ID do Pixel só com números, ignorando espaços", () => {
+    expect(businessSchema.parse({ name: "Padaria", meta_pixel_id: " 1234 5678 9012 3456 " }).meta_pixel_id).toBe("1234567890123456");
+    const invalid = businessSchema.safeParse({ name: "Padaria", meta_pixel_id: "fbq('init')" });
+    expect(invalid.success).toBe(false);
+    if (!invalid.success) expect(fieldErrorsOf(invalid.error).meta_pixel_id).toBeDefined();
   });
 
   it("exige nome", () => {
@@ -76,6 +83,19 @@ describe("linkSchema", () => {
   it("descarta campos Pix em links de outros tipos", () => {
     const r = linkSchema.parse({ name: "Site", type: "other", url: "site.com", pix_key: "x" });
     expect(r.pix_key).toBeNull();
+  });
+
+  it("aceita Wi-Fi com rede e senha, sem URL", () => {
+    const r = linkSchema.parse({ name: "Wi-Fi", type: "wifi", url: "site.com", wifi_ssid: " Padaria ", wifi_password: " a b " });
+    expect(r).toMatchObject({ url: null, wifi_ssid: "Padaria", wifi_password: " a b ", pix_key: null });
+    expect(linkSchema.parse({ name: "Wi-Fi", type: "wifi", wifi_ssid: "Aberta" }).wifi_password).toBeNull();
+  });
+
+  it("exige o nome da rede no Wi-Fi e descarta campos Wi-Fi em outros tipos", () => {
+    const r = linkSchema.safeParse({ name: "Wi-Fi", type: "wifi", wifi_password: "123" });
+    expect(r.success).toBe(false);
+    if (!r.success) expect(fieldErrorsOf(r.error).wifi_ssid).toBeDefined();
+    expect(linkSchema.parse({ name: "Site", type: "other", url: "site.com", wifi_ssid: "x" }).wifi_ssid).toBeNull();
   });
 
   it("interpreta is_active vindo de formulário", () => {

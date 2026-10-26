@@ -111,6 +111,23 @@ export async function deleteLink(businessId: string, linkId: string): Promise<Ac
   redirect(`/dashboard/${businessId}`);
 }
 
+// Peças -------------------------------------------------------------------
+
+/** Peça no automático (linkId null) ou fixada num link do mesmo negócio (o banco garante). */
+export async function setCardLink(businessId: string, cardId: string, linkId: string | null): Promise<ActionState> {
+  const supabase = await requireUser();
+  const { data, error } = await supabase
+    .from("cards")
+    .update({ direct_link_id: linkId })
+    .eq("id", cardId)
+    .eq("business_id", businessId)
+    .select("id");
+  if (error || !data.length) return { message: "Não foi possível alterar a peça." };
+
+  revalidatePath(`/dashboard/${businessId}`);
+  return { ok: true, message: linkId ? "A peça vai direto para o link escolhido." : "A peça está no automático." };
+}
+
 // Google Maps --------------------------------------------------------------
 
 export type GoogleLinkInput = { placeId: string } | { query: string };

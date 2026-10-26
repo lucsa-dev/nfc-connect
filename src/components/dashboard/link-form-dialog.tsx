@@ -25,7 +25,7 @@ type FormAction = (prev: ActionState, formData: FormData) => Promise<ActionState
 
 export type LinkDefaults = Pick<
   Link,
-  "name" | "slug" | "type" | "url" | "is_active" | "pix_key" | "pix_name" | "pix_city" | "pix_amount" | "pix_description"
+  "name" | "slug" | "type" | "url" | "is_active" | "pix_key" | "pix_name" | "pix_city" | "pix_amount" | "pix_description" | "wifi_ssid" | "wifi_password"
 >;
 
 const selectClass =
@@ -112,16 +112,33 @@ function LinkForm({
         />
       </Field>
 
-      <Field id="link-url" label="URL de redirecionamento" errors={errors.url} hint={LINK_TYPE_INFO[type].urlHint}>
-        <Input
-          id="link-url"
-          name="url"
-          defaultValue={text("url")}
-          placeholder={type === "business_card" ? "@perfil ou meusite.com.br" : "https://"}
-          inputMode="url"
-          aria-invalid={Boolean(errors.url)}
-        />
-      </Field>
+      {type === "wifi" ? (
+        <fieldset className="grid gap-4 rounded-lg border p-3">
+          <legend className="px-1 text-sm font-medium">Rede Wi-Fi</legend>
+          <p className="-mt-1 text-xs text-muted-foreground">
+            O celular não conecta sozinho pelo navegador: o link abre uma página com a rede e um botão para copiar a senha.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field id="wifi-ssid" label="Nome da rede" errors={errors.wifi_ssid}>
+              <Input id="wifi-ssid" name="wifi_ssid" maxLength={32} defaultValue={text("wifi_ssid")} aria-invalid={Boolean(errors.wifi_ssid)} />
+            </Field>
+            <Field id="wifi-password" label="Senha" errors={errors.wifi_password} hint="Vazio: rede aberta">
+              <Input id="wifi-password" name="wifi_password" maxLength={63} autoComplete="off" defaultValue={text("wifi_password")} aria-invalid={Boolean(errors.wifi_password)} />
+            </Field>
+          </div>
+        </fieldset>
+      ) : (
+        <Field id="link-url" label="URL de redirecionamento" errors={errors.url} hint={LINK_TYPE_INFO[type].urlHint}>
+          <Input
+            id="link-url"
+            name="url"
+            defaultValue={text("url")}
+            placeholder={type === "business_card" ? "@perfil ou meusite.com.br" : "https://"}
+            inputMode="url"
+            aria-invalid={Boolean(errors.url)}
+          />
+        </Field>
+      )}
 
       {type === "pix" && (
         <fieldset className="grid gap-4 rounded-lg border p-3">

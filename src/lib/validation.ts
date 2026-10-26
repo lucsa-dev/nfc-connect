@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { LINK_TYPES } from "@/lib/link-types";
 import { normalizePixKey } from "@/lib/pix";
+import { PIXEL_ID_PATTERN } from "@/lib/pixel";
 import {
   isReservedBusinessSlug,
   isValidSlug,
@@ -30,6 +31,12 @@ export const businessSchema = z
     name: z.string().trim().min(2, { error: "Informe o nome do negócio" }).max(120),
     slug: z.string().optional(),
     description: optionalText(500),
+    // Só os números: o Gerenciador de Eventos às vezes copia com espaços.
+    meta_pixel_id: z
+      .string()
+      .optional()
+      .transform((v) => v?.replace(/\s/g, "") || null)
+      .refine((v) => v === null || PIXEL_ID_PATTERN.test(v), { error: "O ID do Pixel tem só números (ex.: 1234567890123456)" }),
   })
   .transform((data) => ({ ...data, slug: slugField(data.name, data.slug) }))
   .superRefine((data, ctx) => {
@@ -67,6 +74,13 @@ export const linkSchema = z
     pix_city: optionalText(15),
     pix_amount: amountField,
     pix_description: optionalText(50),
+    wifi_ssid: optionalText(32),
+    // Sem trim: espaço pode fazer parte da senha.
+    wifi_password: z
+      .string()
+      .max(63, { error: "Máximo de 63 caracteres" })
+      .optional()
+      .transform((v) => v || null),
     is_active: z
       .union([z.literal("on"), z.literal("true"), z.literal("false"), z.boolean()])
       .optional()
@@ -78,8 +92,9 @@ export const linkSchema = z
       ctx.addIssue({ code: "custom", path: ["slug"], message: slugMessage });
     }
 
+    const isWifi = data.type === "wifi";
     let url: string | null = null;
-    if (data.url?.trim()) {
+    if (data.url?.trim() && !isWifi) {
       url = normalizeDestinationUrl(data.url);
       if (!url) ctx.addIssue({ code: "custom", path: ["url"], message: "URL inválida" });
     }
@@ -105,6 +120,9 @@ export const linkSchema = z
         ctx.addIssue({ code: "custom", path: ["pix_name"], message: "Informe o nome do recebedor" });
       if (!data.pix_city)
         ctx.addIssue({ code: "custom", path: ["pix_city"], message: "Informe a cidade do recebedor" });
+    } else if (isWifi) {
+      if (!data.wifi_ssid)
+        ctx.addIssue({ code: "custom", path: ["wifi_ssid"], message: "Informe o nome da rede" });
     } else if (!data.url?.trim()) {
       ctx.addIssue({ code: "custom", path: ["url"], message: "Informe a URL de destino" });
     }
@@ -120,6 +138,8 @@ export const linkSchema = z
       pix_city: isPix ? data.pix_city : null,
       pix_amount: isPix ? data.pix_amount : null,
       pix_description: isPix ? data.pix_description : null,
+      wifi_ssid: isWifi ? data.wifi_ssid : null,
+      wifi_password: isWifi ? data.wifi_password : null,
     };
   });
 
