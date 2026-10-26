@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ExternalLinkIcon } from "lucide-react";
+import { CheckIcon, ExternalLinkIcon, FileTextIcon, Loader2Icon } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { ProspectReportButton, RunPoller } from "@/components/market/market-actions";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getProspectSearch } from "@/lib/data";
+import { getLatestReportsByPlace, getProspectSearch } from "@/lib/data";
 import { formatDateTime, formatNumber } from "@/lib/format";
 import { NEARBY_ALL } from "@/lib/apify-maps";
 import { formatDistance, readProspects, type Prospect } from "@/lib/market";
@@ -46,6 +47,46 @@ function reportSearch(p: Prospect, search: { term: string; area: string; center_
   return { term, area };
 }
 
+type ExistingReport = { id: string; status: string };
+
+/** Marca o negócio que já tem relatório (pronto ou ainda gerando). */
+function ReportFlag({ report }: { report: ExistingReport | undefined }) {
+  if (!report) return null;
+  const running = report.status === "running";
+  return (
+    <Badge variant="secondary" className="ml-2 align-middle">
+      {running ? <Loader2Icon className="animate-spin" /> : <CheckIcon />}
+      {running ? "Gerando relatório" : "Relatório criado"}
+    </Badge>
+  );
+}
+
+/** Nome do negócio: abre o relatório quando já existe um. */
+function ProspectName({ p, report }: { p: Prospect; report: ExistingReport | undefined }) {
+  return (
+    <span className="font-medium break-words">
+      {report ? (
+        <Link href={`/dashboard/relatorios/${report.id}`} className="hover:underline">
+          {p.name}
+        </Link>
+      ) : (
+        p.name
+      )}
+      <ReportFlag report={report} />
+    </span>
+  );
+}
+
+/** Abre o relatório existente ou gera um novo. */
+function ReportAction({ p, report, search }: { p: Prospect; report: ExistingReport | undefined; search: Parameters<typeof reportSearch>[1] }) {
+  if (!report) return <ProspectReportButton placeId={p.placeId} name={p.name} {...reportSearch(p, search)} />;
+  return (
+    <Button size="sm" variant="outline" nativeButton={false} render={<Link href={`/dashboard/relatorios/${report.id}`} />}>
+      <FileTextIcon /> Ver relatório
+    </Button>
+  );
+}
+
 const SORTS = [
   { id: "oportunidade", label: "Oportunidade" },
   { id: "distancia", label: "Mais perto" },
@@ -58,6 +99,7 @@ export default async function ProspectSearchPage({ params, searchParams }: PageP
   const byDistance = nearby && (await searchParams).ordem === "distancia";
   const prospects = readProspects(search.results).filter((p) => !p.closed);
   if (byDistance) prospects.sort((a, b) => (a.distanceM ?? Infinity) - (b.distanceM ?? Infinity));
+  const reports = await getLatestReportsByPlace(prospects.map((p) => p.placeId));
 
   return (
     <>
@@ -99,7 +141,9 @@ export default async function ProspectSearchPage({ params, searchParams }: PageP
                 <li key={p.placeId} className="grid gap-2 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <span className="min-w-0">
-                      <span className="block font-medium break-words">{p.name}</span>
+                      <span className="block">
+                        <ProspectName p={p} report={reports.get(p.placeId)} />
+                      </span>
                       <span className="text-xs text-muted-foreground">
                         {[
                           p.distanceM != null && formatDistance(p.distanceM),
@@ -116,7 +160,7 @@ export default async function ProspectSearchPage({ params, searchParams }: PageP
                   </div>
                   {p.reasons.length > 0 && <p className="text-xs text-muted-foreground">{p.reasons.join(" · ")}</p>}
                   <div className="flex items-center gap-3">
-                    <ProspectReportButton placeId={p.placeId} name={p.name} {...reportSearch(p, search)} />
+                    <ReportAction p={p} report={reports.get(p.placeId)} search={search} />
                     <MapsLink p={p} />
                   </div>
                 </li>
@@ -143,7 +187,9 @@ export default async function ProspectSearchPage({ params, searchParams }: PageP
                       <ScoreBadge score={p.score} />
                     </TableCell>
                     <TableCell className="max-w-[22rem] whitespace-normal">
-                      <span className="block font-medium">{p.name}</span>
+                      <span className="block">
+                        <ProspectName p={p} report={reports.get(p.placeId)} />
+                      </span>
                       {p.category && <span className="block text-xs text-muted-foreground">{p.category}</span>}
                       {p.reasons.length > 0 && <span className="block text-xs text-muted-foreground">{p.reasons.join(" · ")}</span>}
                     </TableCell>
@@ -156,7 +202,7 @@ export default async function ProspectSearchPage({ params, searchParams }: PageP
                     <TableCell>
                       <div className="flex items-center justify-end gap-3">
                         <MapsLink p={p} />
-                        <ProspectReportButton placeId={p.placeId} name={p.name} {...reportSearch(p, search)} />
+                        <ReportAction p={p} report={reports.get(p.placeId)} search={search} />
                       </div>
                     </TableCell>
                   </TableRow>

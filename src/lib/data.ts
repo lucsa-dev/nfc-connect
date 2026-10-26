@@ -231,6 +231,22 @@ export async function listReports({ businessId, placeId }: { businessId?: string
   return data;
 }
 
+/** Relatório mais recente (que não falhou) de cada Place ID, para marcar na prospecção. */
+export async function getLatestReportsByPlace(placeIds: string[]) {
+  const reports = new Map<string, { id: string; status: string }>();
+  if (!placeIds.length) return reports;
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("market_reports")
+    .select("id, place_id, status")
+    .in("place_id", placeIds)
+    .neq("status", "failed")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  for (const r of data) if (!reports.has(r.place_id)) reports.set(r.place_id, { id: r.id, status: r.status });
+  return reports;
+}
+
 export async function listProspectSearches(limit = 20) {
   const supabase = await createClient();
   const { data, error } = await supabase
