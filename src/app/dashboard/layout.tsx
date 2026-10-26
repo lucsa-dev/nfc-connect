@@ -1,12 +1,15 @@
 import { LogOutIcon } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Logo } from "@/components/brand/logo";
 import { BottomNav, TopNav } from "@/components/dashboard/nav";
 import { ThemeSwitcher } from "@/components/theme/theme-switcher";
 import { Button } from "@/components/ui/button";
-import { getCurrentUserEmail } from "@/lib/data";
+import { getCurrentUserEmail, isCurrentUserAdmin } from "@/lib/data";
 
 export default async function DashboardLayout({ children }: LayoutProps<"/dashboard">) {
+  // O painel é só dos administradores; o dono do negócio usa a área /conta.
+  if (!(await isCurrentUserAdmin())) redirect("/conta");
   const email = await getCurrentUserEmail();
 
   return (

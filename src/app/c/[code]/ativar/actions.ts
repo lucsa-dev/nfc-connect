@@ -6,7 +6,9 @@ import { z } from "zod";
 import { normalizeCode } from "@/lib/cards";
 import { analyzeSnapshot, collectProfiles, fetchPlaceProfile, metricsEnabled, saveSnapshot, storeProfiles } from "@/lib/google";
 import { businessSlugCandidates, mapsQueryOf } from "@/lib/leads";
+import { addMember, sendAccessLink } from "@/lib/members";
 import { normalizeGoogleReviewUrl, PLACE_ID_PATTERN, reviewUrl, type PlaceProfile } from "@/lib/places";
+import { normalizeBrPhone } from "@/lib/quiz";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type ActivationResult = { ok: false; message: string };
@@ -15,6 +17,21 @@ export type ActivationResult = { ok: false; message: string };
 export type ActivationInput =
   | { placeId: string }
   | { manual: { name: string; city: string; state: string | null; reviewUrl: string } };
+
+/** Dono do negócio: recebe o link de acesso à área /conta (relatórios mensais). */
+export interface ActivationOwner {
+  email: string;
+  whatsapp: string;
+}
+
+const ownerSchema = z.object({
+  email: z.email({ error: "Confira o e-mail." }).max(320),
+  whatsapp: z.string().transform((v, ctx) => {
+    const phone = normalizeBrPhone(v);
+    if (!phone) ctx.addIssue({ code: "custom", message: "Confira o WhatsApp com DDD." });
+    return phone ?? "";
+  }),
+});
 
 const manualSchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -67,9 +84,12 @@ async function createReviewLink(supabase: Admin, businessId: string, url: string
  * Vira um negócio do dono do lote (ou reaproveita o mesmo lugar do Google /
  * o mesmo link de avaliação), e a peça passa a apontar para o negócio.
  */
-export async function activateCard(rawCode: string, input: ActivationInput): Promise<ActivationResult> {
+export async function activateCard(rawCode: string, input: ActivationInput, rawOwner: ActivationOwner): Promise<ActivationResult> {
   const code = normalizeCode(rawCode);
   if (!code) return { ok: false, message: "Cartão inválido." };
+  const ownerParsed = ownerSchema.safeParse(rawOwner);
+  if (!ownerParsed.success) return { ok: false, message: ownerParsed.error.issues[0]?.message ?? "Confira o e-mail e o WhatsApp." };
+  const owner = { email: ownerParsed.data.email.toLowerCase(), phone: ownerParsed.data.whatsapp };
 
   const supabase = createAdminClient();
   const { data: card } = await supabase
@@ -192,6 +212,13 @@ export async function activateCard(rawCode: string, input: ActivationInput): Pro
     await supabase.from("market_reports").update({ business_id: businessId }).eq("place_id", planned.place_id).is("business_id", null);
   }
 
+  // Acesso do dono à área /conta: o link segue por e-mail depois da resposta.
+  // Se o negócio já tem um dono cadastrado, este fica aguardando a aprovação da TopTap.
+  after(async () => {
+    const status = await addMember(supabase, { businessId, ...owner });
+    if (status === "active") await sendAccessLink(owner.email);
+  });
+
   // Métricas do Google: com a Places API já temos o perfil; sem ela, o scraper
   // (Apify) busca pelo nome e cidade depois da resposta (leva de 30 s a 2 min).
   // Num negócio já existente (2ª peça), só coleta se não houver coleta do dia.
@@ -215,5 +242,5 @@ export async function activateCard(rawCode: string, input: ActivationInput): Pro
     }
   }
 
-  redirect(`/c/${code}/ativar`);
+  redirect(`/c/${code}/ativar?acesso=1`);
 }

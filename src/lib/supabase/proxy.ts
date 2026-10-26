@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/database.types";
 import { supabasePublishableKey, supabaseUrl } from "@/lib/supabase/env";
 
-/** Renova a sessão e protege o painel. */
+/** Renova a sessão e protege o painel e a área do cliente. */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -27,7 +27,7 @@ export async function updateSession(request: NextRequest) {
   const isLoggedIn = Boolean(data?.claims?.sub);
   const { pathname } = request.nextUrl;
 
-  if (!isLoggedIn && pathname.startsWith("/dashboard")) {
+  if (!isLoggedIn && (pathname.startsWith("/dashboard") || pathname.startsWith("/conta"))) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = `?next=${encodeURIComponent(pathname)}`;

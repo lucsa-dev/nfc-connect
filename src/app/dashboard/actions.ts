@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { databaseErrorState, type ActionState } from "@/lib/action-state";
 import type { MapsTarget } from "@/lib/apify-maps";
 import { analysisEnabled, analyzeSnapshot, collectProfiles, storeProfiles, targetOf } from "@/lib/google";
+import { sendAccessLink } from "@/lib/members";
 import { PLACE_ID_PATTERN, readPlaceProfile } from "@/lib/places";
 import { createClient } from "@/lib/supabase/server";
 import { businessSchema, fieldErrorsOf, formDataToObject, linkSchema } from "@/lib/validation";
@@ -109,6 +110,48 @@ export async function deleteLink(businessId: string, linkId: string): Promise<Ac
 
   revalidatePath(`/dashboard/${businessId}`);
   redirect(`/dashboard/${businessId}`);
+}
+
+// Acesso do cliente ---------------------------------------------------------
+
+/** Libera o acesso pendente de um membro e envia o link por e-mail. */
+export async function approveMember(businessId: string, userId: string): Promise<ActionState> {
+  const supabase = await requireUser();
+  const { data, error } = await supabase
+    .from("business_members")
+    .update({ status: "active" })
+    .eq("business_id", businessId)
+    .eq("user_id", userId)
+    .select("email")
+    .maybeSingle();
+  if (error || !data) return { message: "Não foi possível liberar o acesso." };
+
+  const sent = await sendAccessLink(data.email);
+  revalidatePath(`/dashboard/${businessId}`);
+  return { ok: true, message: sent ? "Acesso liberado. Enviamos o link por e-mail." : "Acesso liberado, mas o e-mail não foi enviado." };
+}
+
+export async function resendMemberLink(businessId: string, userId: string): Promise<ActionState> {
+  const supabase = await requireUser();
+  const { data } = await supabase
+    .from("business_members")
+    .select("email")
+    .eq("business_id", businessId)
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .maybeSingle();
+  if (!data) return { message: "Membro não encontrado." };
+  return (await sendAccessLink(data.email))
+    ? { ok: true, message: `Link enviado para ${data.email}.` }
+    : { message: "Não foi possível enviar o e-mail. Confira o SMTP no Supabase." };
+}
+
+export async function removeMember(businessId: string, userId: string): Promise<ActionState> {
+  const supabase = await requireUser();
+  const { error } = await supabase.from("business_members").delete().eq("business_id", businessId).eq("user_id", userId);
+  if (error) return { message: "Não foi possível remover o acesso." };
+  revalidatePath(`/dashboard/${businessId}`);
+  return { ok: true, message: "Acesso removido." };
 }
 
 // Peças -------------------------------------------------------------------

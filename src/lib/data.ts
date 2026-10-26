@@ -10,6 +10,37 @@ export async function getCurrentUserEmail(): Promise<string | null> {
   return (data?.claims?.email as string | undefined) ?? null;
 }
 
+export async function isCurrentUserAdmin(): Promise<boolean> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("is_admin");
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Negócios do dono logado (área /conta). Pelo RLS, os dados do negócio só vêm
+ * quando a participação está ativa; pendente, chega só o status.
+ */
+export async function listMemberships() {
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  if (!userId) return [];
+  const { data, error } = await supabase
+    .from("business_members")
+    .select(
+      `status, business:businesses(id, name, slug, plan_expires_at,
+        links(id, name, type, slug, is_active, click_count),
+        cards(id, code, visit_count, activated_at, batch:card_batches(product)),
+        market_reports(id, token, term, area, created_at, data))`,
+    )
+    .eq("user_id", userId)
+    .order("created_at", { referencedTable: "businesses.links", ascending: true })
+    .order("created_at", { referencedTable: "businesses.market_reports", ascending: false });
+  if (error) throw error;
+  return data;
+}
+
 export async function listBusinesses() {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -29,7 +60,9 @@ export async function getBusinessWithLinks(businessId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("businesses")
-    .select("*, links(*), cards(id, code, direct_link_id, visit_count, activated_at, batch:card_batches(product))")
+    .select(
+      "*, links(*), cards(id, code, direct_link_id, visit_count, activated_at, batch:card_batches(product)), business_members(user_id, email, phone, status, created_at)",
+    )
     .eq("id", businessId)
     .order("created_at", { referencedTable: "links", ascending: true })
     .order("activated_at", { referencedTable: "cards", ascending: true })

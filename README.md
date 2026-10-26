@@ -106,6 +106,18 @@ Cliente abre a peça (/c/k7m2p9qa)
 - Qualquer pessoa com a peça em mãos pode ativá-la. Sem a Places API, informa nome, cidade e o link de avaliação do Google (`g.page/r/.../review`). Se o mesmo link (ou Place ID) já existir, a peça entra no mesmo negócio com o próprio link.
 - Excluir o negócio libera as peças dele para uma nova ativação.
 
+## Acesso do cliente (`/conta`)
+
+Na ativação, o dono informa e-mail e WhatsApp. Ele vira membro do negócio (`business_members`) e recebe um link mágico por e-mail. A área `/conta` mostra o plano, o histórico de relatórios mensais, as peças e os links, só para leitura. O primeiro membro entra ativo; quem chega depois fica aguardando a liberação no painel (página do negócio → Acesso do cliente). O painel `/dashboard` é só para quem está em `admins`; os outros usuários são levados para `/conta`.
+
+Configuração no Supabase (Authentication):
+
+1. **URL Configuration** → Site URL: o domínio de produção (ex.: `https://toptap.com.br`).
+2. **Email Templates → Magic Link**: troque o link do modelo por
+   `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`
+   Assim o link funciona em qualquer navegador (o padrão só funciona no mesmo navegador que pediu).
+3. **SMTP Settings**: configure um SMTP próprio (ex.: Resend). O envio padrão do Supabase só entrega para e-mails da equipe do projeto e poucas mensagens por hora.
+
 ## Métricas do Google Maps (Apify)
 
 O [Google Maps Scraper](https://apify.com/compass/crawler-google-places) da Apify busca cada negócio (por Place ID ou por "Nome, Cidade - UF") e traz nota, avaliações, distribuição de estrelas, total de fotos, horário, contato e as 20 avaliações mais recentes (com a resposta do dono).

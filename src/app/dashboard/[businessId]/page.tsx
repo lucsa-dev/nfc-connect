@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChevronRightIcon, LinkIcon } from "lucide-react";
 import { BusinessFormDialog } from "@/components/dashboard/business-form-dialog";
 import { CardModeSelect } from "@/components/dashboard/card-mode-select";
+import { MemberActions } from "@/components/dashboard/member-actions";
 import { ConfirmDelete } from "@/components/dashboard/confirm-delete";
 import { GooglePanel } from "@/components/dashboard/google-panel";
 import { MarketPanel } from "@/components/market/market-panel";
@@ -23,13 +24,14 @@ import {
 } from "@/components/ui/table";
 import { apifyEnabled } from "@/lib/apify";
 import { getProduct } from "@/lib/card";
+import { formatBrPhone } from "@/lib/quiz";
 import { getBusinessWithLinks, getPlaceSnapshots, listReports } from "@/lib/data";
 import { analysisEnabled, metricsEnabled, placesEnabled } from "@/lib/google";
 import { formatDateTime, formatNumber } from "@/lib/format";
 import { readPlaceProfile } from "@/lib/places";
 import { LINK_TYPE_INFO } from "@/lib/link-types";
 import { buildPublicLinkUrl, getSiteUrl } from "@/lib/urls";
-import { createLink, deleteBusiness, setCardLink, updateBusiness } from "../actions";
+import { approveMember, createLink, deleteBusiness, removeMember, resendMemberLink, setCardLink, updateBusiness } from "../actions";
 
 // Server Actions desta página: busca no Maps (scraper, até ~4 min) e análise da IA.
 export const maxDuration = 300;
@@ -229,6 +231,42 @@ export default async function BusinessPage({ params }: PageProps<"/dashboard/[bu
           </Card>
         </section>
       )}
+
+      <section className="mt-8">
+        <div className="mb-3">
+          <h2 className="text-lg font-semibold">Acesso do cliente</h2>
+          <p className="text-sm text-muted-foreground">
+            Quem entra na área do cliente por link no e-mail. O dono informa e-mail e WhatsApp ao ativar a peça.
+          </p>
+        </div>
+        <Card className="py-0">
+          {business.business_members.length === 0 ? (
+            <p className="p-4 text-sm text-muted-foreground">Ninguém ainda. O acesso é criado quando o dono ativa uma peça.</p>
+          ) : (
+            <ul className="divide-y">
+              {business.business_members.map((m) => (
+                <li key={m.user_id} className="flex flex-wrap items-center justify-between gap-3 p-4">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium break-all">{m.email}</span>
+                      {m.status === "pending" && <Badge variant="outline">Aguardando liberação</Badge>}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {[m.phone && formatBrPhone(m.phone), `desde ${formatDateTime(m.created_at)}`].filter(Boolean).join(" · ")}
+                    </div>
+                  </div>
+                  <MemberActions
+                    pending={m.status === "pending"}
+                    approve={approveMember.bind(null, business.id, m.user_id)}
+                    resend={resendMemberLink.bind(null, business.id, m.user_id)}
+                    remove={removeMember.bind(null, business.id, m.user_id)}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </section>
     </>
   );
 }

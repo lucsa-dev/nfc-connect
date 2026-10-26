@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { CheckCircle2Icon, StarIcon } from "lucide-react";
+import { CheckCircle2Icon, MailIcon, StarIcon } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { ActivationForm } from "@/components/cards/activation-form";
 import { Button } from "@/components/ui/button";
@@ -20,8 +20,10 @@ export const dynamic = "force-dynamic";
 // e analisa com a IA (after()).
 export const maxDuration = 300;
 
-export default async function ActivatePage({ params }: PageProps<"/c/[code]/ativar">) {
+export default async function ActivatePage({ params, searchParams }: PageProps<"/c/[code]/ativar">) {
   const code = normalizeCode((await params).code);
+  // Acabou de ativar: o link de acesso à área do cliente foi enviado por e-mail.
+  const justActivated = (await searchParams).acesso === "1";
   if (!code) notFound();
 
   const supabase = createAdminClient();
@@ -59,6 +61,15 @@ export default async function ActivatePage({ params }: PageProps<"/c/[code]/ativ
               <Button size="lg" nativeButton={false} render={<a href={reviewUrl} />}>
                 <StarIcon /> Abrir avaliação
               </Button>
+            )}
+            {justActivated && (
+              <p className="flex items-start gap-2 rounded-xl bg-muted p-3 text-left text-sm">
+                <MailIcon className="mt-0.5 size-4 shrink-0 text-primary" />
+                <span>
+                  Enviamos um link para o seu e-mail. Por ele você acompanha os acessos e recebe o relatório do seu negócio no Google
+                  todo mês. Confira também o spam.
+                </span>
+              </p>
             )}
           </div>
         ) : (
