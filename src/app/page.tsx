@@ -1,38 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  BrainIcon,
-  CalendarCheckIcon,
-  CameraIcon,
-  CarIcon,
-  CheckIcon,
-  CoffeeIcon,
-  CreditCardIcon,
-  DumbbellIcon,
-  GlobeIcon,
-  HandshakeIcon,
-  HotelIcon,
-  MapIcon,
-  MapPinIcon,
-  MessageCircleIcon,
-  MessageSquareWarningIcon,
-  PawPrintIcon,
-  ScissorsIcon,
-  SearchIcon,
-  ShoppingBagIcon,
-  SmartphoneNfcIcon,
-  SparklesIcon,
-  StarIcon,
-  StethoscopeIcon,
-  SwordsIcon,
-  TrendingUpIcon,
-  UtensilsCrossedIcon,
-  UtensilsIcon,
-  WalletIcon,
-  WifiIcon,
-  type LucideIcon,
-} from "lucide-react";
-import { Logo } from "@/components/brand/logo";
+import { ArrowUpIcon, MessageCircleIcon, SearchIcon, StarIcon } from "lucide-react";
+import { Logo, LogoIcon, NfcWaves } from "@/components/brand/logo";
 import { ArtPreview, type ArtData } from "@/components/cards/print-art";
 import { CtaButton } from "@/components/landing/cta-button";
 import { PhoneMock } from "@/components/landing/phone-mock";
@@ -57,98 +26,64 @@ const demoCard: ArtData = {
   url: displayUrl(siteUrl),
 };
 
-/** Cores da marca (as do Google, da logo). Os tons escuros têm contraste com texto branco. */
-const BRAND = {
-  blue: { fg: "#1A73E8", soft: "bg-[#4285F4]/12", text: "text-[#1A73E8] dark:text-[#8AB4F8]" },
-  red: { fg: "#EA4335", soft: "bg-[#EA4335]/12", text: "text-[#C5221F] dark:text-[#F28B82]" },
-  yellow: { fg: "#FBBC05", soft: "bg-[#FBBC05]/18", text: "text-[#B06000] dark:text-[#FDD663]" },
-  green: { fg: "#34A853", soft: "bg-[#34A853]/14", text: "text-[#188038] dark:text-[#81C995]" },
+/** Texto nas cores da marca, com contraste nos dois temas. */
+const TEXT = {
+  blue: "text-[#1A73E8] dark:text-[#8AB4F8]",
+  red: "text-[#C5221F] dark:text-[#F28B82]",
+  yellow: "text-[#B06000] dark:text-[#FDD663]",
+  green: "text-[#188038] dark:text-[#81C995]",
 } as const;
-type BrandColor = keyof typeof BRAND;
 
 const NAV = [
-  { href: "#como-funciona", label: "Como funciona" },
-  { href: "#relatorio", label: "Relatório mensal" },
+  { href: "#problema", label: "O problema" },
+  { href: "#ano", label: "Como funciona" },
+  { href: "#relatorio", label: "Relatório" },
   { href: "#plano", label: "Plano" },
-  { href: "#duvidas", label: "Dúvidas" },
 ];
 
-const PILLARS: Array<{ icon: LucideIcon; color: BrandColor; title: string; text: string }> = [
-  { icon: StarIcon, color: "yellow", title: "Mais avaliações", text: "Placa com NFC e QR Code: o cliente avalia em um toque, sem procurar seu perfil." },
-  { icon: MapPinIcon, color: "blue", title: "Posição no Maps", text: "Onde você aparece quando alguém busca o que você vende na sua região." },
-  { icon: SwordsIcon, color: "red", title: "Concorrentes", text: "Quem está na sua frente, quanto cresce por mês e quanto falta para passar." },
-  { icon: TrendingUpIcon, color: "green", title: "Evolução mensal", text: "Um relatório novo todo mês, comparado com o anterior, durante 12 meses." },
+/** Busca de exemplo no Maps: o negócio com a melhor nota fica em 4º por ter poucas avaliações. */
+const MAPS_RESULTS = [
+  { name: "Padaria Pão Dourado", rating: 4.6, reviews: 612, meta: "Padaria · 400 m" },
+  { name: "Panificadora Central", rating: 4.5, reviews: 438, meta: "Padaria · 650 m" },
+  { name: "Casa do Pão", rating: 4.4, reviews: 297, meta: "Padaria · 300 m" },
+  { name: "A sua padaria", rating: 4.9, reviews: 41, meta: "Padaria · 200 m", you: true },
 ];
 
 const BEFORE = ["Abrir o Google", "Buscar o seu negócio", "Achar o perfil certo", "Rolar até as avaliações", "Tocar em “Avaliar”"];
 
-const STEPS: Array<{ icon: LucideIcon; color: BrandColor; when: string; title: string; text: string }> = [
-  {
-    icon: SearchIcon,
-    color: "blue",
-    when: "Hoje",
-    title: "Diagnóstico grátis",
-    text: "Achamos seu negócio no Google e mostramos onde você está e quantas avaliações faltam para crescer.",
-  },
-  {
-    icon: SmartphoneNfcIcon,
-    color: "yellow",
-    when: "Em poucos dias",
-    title: "Placa no balcão",
-    text: "Chega pronta, com o link da sua avaliação. Você cola e os clientes já podem avaliar.",
-  },
-  {
-    icon: CalendarCheckIcon,
-    color: "green",
-    when: "Todo mês",
-    title: "Relatório na mão",
-    text: "Sua posição, seus concorrentes e o que fazer no mês seguinte. São 12 relatórios no ano.",
-  },
-];
+/** Linha do tempo do plano: o que acontece em cada mês. */
+const MILESTONES: Record<number, { title: string; color: keyof typeof TEXT; dot: string }> = {
+  0: { title: "Diagnóstico", color: "blue", dot: "bg-[#4285F4]" },
+  1: { title: "Placa no balcão", color: "yellow", dot: "bg-[#FBBC05]" },
+  6: { title: "Meio do caminho", color: "red", dot: "bg-[#EA4335]" },
+  12: { title: "Balanço do ano", color: "green", dot: "bg-[#34A853]" },
+};
 
-const REPORT_ITEMS: Array<{ icon: LucideIcon; color: BrandColor; title: string; text: string }> = [
-  { icon: MapPinIcon, color: "blue", title: "Posição na busca", text: "Em que lugar você aparece na busca que o seu cliente faz." },
-  { icon: MapIcon, color: "blue", title: "Mapa de ranking", text: "Sua posição de vários pontos do bairro, não só da porta da loja." },
-  { icon: SwordsIcon, color: "red", title: "Você × concorrentes", text: "Nota, avaliações e ritmo de cada um, lado a lado." },
-  { icon: TrendingUpIcon, color: "green", title: "Quanto falta", text: "Quantas avaliações por mês você precisa para passar quem está na frente." },
-  { icon: BrainIcon, color: "yellow", title: "O que os clientes dizem", text: "Elogios e reclamações, seus e dos concorrentes, lidos por IA." },
-  { icon: MessageSquareWarningIcon, color: "red", title: "Negativas sem resposta", text: "As avaliações ruins que ainda pedem uma resposta sua." },
-  { icon: SparklesIcon, color: "yellow", title: "Oportunidades no perfil", text: "O que os concorrentes mostram no Google e você ainda não." },
-  { icon: SmartphoneNfcIcon, color: "green", title: "Resultado da placa", text: "Quantos clientes tocaram na placa e quantas avaliações chegaram." },
+const REPORT_ITEMS = [
+  ["Posição na busca", "Em que lugar você aparece na busca que o seu cliente faz."],
+  ["Mapa de ranking", "Sua posição vista de vários pontos do bairro, não só da porta da loja."],
+  ["Você e os concorrentes", "Nota, avaliações e ritmo de cada um, lado a lado."],
+  ["Quanto falta", "Quantas avaliações por mês você precisa para passar quem está na frente."],
+  ["O que os clientes dizem", "Elogios e reclamações, seus e dos concorrentes, lidos por IA."],
+  ["Negativas sem resposta", "As avaliações ruins que ainda esperam uma resposta sua."],
+  ["Oportunidades no perfil", "O que os concorrentes mostram no Google e você ainda não."],
+  ["Resultado da placa", "Quantos clientes tocaram na placa e quantas avaliações chegaram."],
 ];
 
 /** Posição no Maps mês a mês, só para ilustrar o relatório. */
 const RANK_EXAMPLE = [9, 9, 7, 6, 6, 5, 4, 4, 3, 3, 2, 2];
 
-const INCLUDED = [
-  "Placa de balcão com NFC e QR Code, pronta para colar",
-  "12 relatórios mensais de reputação e concorrência",
-  "Mapa de ranking no Google Maps",
-  "Leitura das avaliações por IA",
-  "Painel com os toques e as avaliações",
-  "Troca do destino da placa quando quiser",
+const RECEIPT: Array<[string, string]> = [
+  ["Diagnóstico do perfil", "grátis"],
+  ["Placa de balcão NFC + QR Code", "1"],
+  ["Relatórios mensais", "12"],
+  ["Mapa de ranking", "todo mês"],
+  ["Leitura das avaliações por IA", "todo mês"],
+  ["Painel de toques e avaliações", "12 meses"],
+  ["Troca do destino da placa", "à vontade"],
 ];
 
-const SEGMENTS = [
-  { icon: UtensilsIcon, label: "Restaurantes" },
-  { icon: CoffeeIcon, label: "Cafés e padarias" },
-  { icon: ScissorsIcon, label: "Salões e barbearias" },
-  { icon: StethoscopeIcon, label: "Clínicas" },
-  { icon: CarIcon, label: "Oficinas" },
-  { icon: HotelIcon, label: "Pousadas" },
-  { icon: ShoppingBagIcon, label: "Lojas" },
-  { icon: DumbbellIcon, label: "Academias" },
-  { icon: PawPrintIcon, label: "Pet shops" },
-];
-
-const DESTINATIONS = [
-  { icon: CameraIcon, label: "Instagram" },
-  { icon: MessageCircleIcon, label: "WhatsApp" },
-  { icon: UtensilsCrossedIcon, label: "Cardápio" },
-  { icon: CreditCardIcon, label: "Pix" },
-  { icon: WifiIcon, label: "Wi-Fi" },
-  { icon: GlobeIcon, label: "Site" },
-];
+const SEGMENTS = ["Restaurantes", "Cafés e padarias", "Salões e barbearias", "Clínicas", "Oficinas", "Pousadas", "Lojas", "Academias", "Pet shops"];
 
 const FAQ = [
   {
@@ -177,33 +112,58 @@ const FAQ = [
   },
 ];
 
-function SectionTitle({ eyebrow, title, text, color = "blue" }: { eyebrow: string; title: string; text?: string; color?: BrandColor }) {
+const decimal = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+function Heading({ kicker, children, className = "" }: { kicker: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className="tt-reveal mx-auto mb-12 max-w-2xl text-center">
-      <p className={`mb-3 inline-flex rounded-full px-3 py-1 text-sm font-semibold ${BRAND[color].soft} ${BRAND[color].text}`}>{eyebrow}</p>
-      <h2 className="text-3xl font-semibold tracking-tight text-balance sm:text-5xl">{title}</h2>
-      {text && <p className="mt-4 text-lg text-pretty text-muted-foreground">{text}</p>}
+    <div className={`tt-reveal max-w-3xl ${className}`}>
+      <p className="mb-4 text-sm font-medium text-muted-foreground">{kicker}</p>
+      <h2 className="text-4xl leading-[1.05] font-semibold tracking-tight text-balance sm:text-6xl">{children}</h2>
     </div>
   );
 }
 
-function IconBadge({ icon: Icon, color, className = "size-12 rounded-2xl" }: { icon: LucideIcon; color: BrandColor; className?: string }) {
+function RatingStars({ rating }: { rating: number }) {
   return (
-    <span className={`flex shrink-0 items-center justify-center ${BRAND[color].soft} ${BRAND[color].text} ${className}`}>
-      <Icon className="size-[45%]" />
+    <span className="flex" aria-hidden>
+      {Array.from({ length: 5 }, (_, i) => (
+        <StarIcon key={i} className={`size-3 ${i < Math.round(rating) ? "fill-[#FBBC05] text-[#FBBC05]" : "fill-muted text-muted"}`} />
+      ))}
     </span>
   );
 }
 
-/** Faixa com as quatro cores da logo. */
-function BrandStripe({ className = "" }: { className?: string }) {
+/** Lista de resultados no estilo do Google Maps. */
+function MapsResults() {
   return (
-    <div className={`flex h-1.5 overflow-hidden rounded-full ${className}`} aria-hidden>
-      <span className="flex-1 bg-[#4285F4]" />
-      <span className="flex-1 bg-[#EA4335]" />
-      <span className="flex-1 bg-[#FBBC05]" />
-      <span className="flex-1 bg-[#34A853]" />
-    </div>
+    <figure className="overflow-hidden rounded-[1.75rem] bg-card shadow-2xl ring-1 ring-foreground/10">
+      <div className="flex items-center gap-3 border-b px-5 py-4">
+        <SearchIcon className="size-4 text-muted-foreground" />
+        <span className="text-sm">padaria perto de mim</span>
+      </div>
+      <ol>
+        {MAPS_RESULTS.map((r, i) => (
+          <li
+            key={r.name}
+            className={`flex items-start gap-4 border-b px-5 py-4 last:border-b-0 ${r.you ? "bg-[#4285F4]/8 shadow-[inset_3px_0_0_#1A73E8]" : ""}`}
+          >
+            <span className={`w-5 pt-0.5 font-heading text-lg font-semibold tabular-nums ${r.you ? TEXT.blue : "text-muted-foreground"}`}>{i + 1}</span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-medium">{r.name}</span>
+              <span className="mt-0.5 flex items-center gap-1.5 text-sm">
+                <span className="tabular-nums">{decimal(r.rating)}</span>
+                <RatingStars rating={r.rating} />
+                <span className="text-muted-foreground tabular-nums">({r.reviews})</span>
+              </span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                {r.meta} · <span className={TEXT.green}>Aberto</span>
+              </span>
+            </span>
+          </li>
+        ))}
+      </ol>
+      <figcaption className="border-t bg-muted/50 px-5 py-2.5 text-[11px] text-muted-foreground">Exemplo ilustrativo</figcaption>
+    </figure>
   );
 }
 
@@ -211,52 +171,105 @@ function BrandStripe({ className = "" }: { className?: string }) {
 function ReportMock() {
   const worst = Math.max(...RANK_EXAMPLE);
   return (
-    <div className="relative rounded-3xl bg-card p-5 shadow-2xl ring-1 ring-foreground/10 sm:p-7">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-medium text-muted-foreground">Relatório do mês 12</p>
-          <p className="font-heading text-lg font-semibold">Padaria Exemplo</p>
-        </div>
-        <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground">Exemplo ilustrativo</span>
+    <figure className="rounded-[1.75rem] bg-card p-6 shadow-2xl ring-1 ring-foreground/10 sm:p-8">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="font-heading text-lg font-semibold">Padaria Exemplo</p>
+        <p className="text-xs text-muted-foreground">relatório 12 de 12</p>
       </div>
-      <BrandStripe className="mt-4" />
+      <p className="mt-1 text-sm text-muted-foreground">Posição na busca “padaria” em Aldeota, Fortaleza</p>
 
-      <p className="mt-5 text-sm font-medium">Posição na busca “padaria” · 12 meses</p>
-      <div className="mt-3 flex h-36 items-end gap-1.5" role="img" aria-label="Posição subindo do 9º para o 2º lugar em 12 meses">
-        {RANK_EXAMPLE.map((rank, i) => {
-          const last = i === RANK_EXAMPLE.length - 1;
-          return (
-            <div key={i} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
-              <span className={`text-[10px] font-semibold tabular-nums ${last ? BRAND.green.text : "text-muted-foreground"}`}>{rank}º</span>
-              <span
-                className={`w-full rounded-t-md ${last ? "bg-[#34A853]" : "bg-[#4285F4]/70"}`}
-                style={{ height: `${((worst + 1 - rank) / worst) * 100}%` }}
-              />
-            </div>
-          );
-        })}
-      </div>
-      <div className="mt-1 flex justify-between text-[10px] text-muted-foreground" aria-hidden>
-        <span>mês 1</span>
-        <span>mês 12</span>
+      <div className="mt-8 flex items-end justify-between gap-6">
+        <p className="font-heading text-7xl leading-none font-semibold tracking-tight">
+          2<span className="text-4xl">º</span>
+        </p>
+        <p className={`flex items-center gap-1 text-sm font-medium ${TEXT.green}`}>
+          <ArrowUpIcon className="size-4" /> subiu 7 posições em 12 meses
+        </p>
       </div>
 
-      <dl className="mt-6 grid grid-cols-2 gap-2.5">
+      <svg viewBox="0 0 220 80" className="mt-6 h-24 w-full overflow-visible" role="img" aria-label="Posição subindo do 9º para o 2º lugar em 12 meses">
+        <polyline
+          fill="none"
+          stroke="#4285F4"
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+          points={RANK_EXAMPLE.map((rank, i) => `${i * 20},${((rank - 1) / (worst - 1)) * 70 + 5}`).join(" ")}
+        />
+        {RANK_EXAMPLE.map((rank, i) => (
+          <circle
+            key={i}
+            cx={i * 20}
+            cy={((rank - 1) / (worst - 1)) * 70 + 5}
+            r={i === RANK_EXAMPLE.length - 1 ? 5 : 2.5}
+            fill={i === RANK_EXAMPLE.length - 1 ? "#34A853" : "#4285F4"}
+          />
+        ))}
+      </svg>
+      <div className="mt-2 flex justify-between text-[11px] text-muted-foreground" aria-hidden>
+        <span>mês 1 · 9º</span>
+        <span>mês 12 · 2º</span>
+      </div>
+
+      <dl className="mt-8 grid grid-cols-3 divide-x border-t pt-5 text-center">
         {(
           [
-            { label: "Posição", value: "2º", note: "subiu 7", color: "blue" },
-            { label: "Avaliações no mês", value: "+14", note: "o 1º fez 11", color: "yellow" },
-            { label: "Toques na placa", value: "86", note: "últimos 30 dias", color: "green" },
-            { label: "Negativas sem resposta", value: "0", note: "tudo respondido", color: "red" },
+            { label: "avaliações no mês", value: "+14", color: "yellow" },
+            { label: "toques na placa", value: "86", color: "blue" },
+            { label: "negativas sem resposta", value: "0", color: "green" },
           ] as const
         ).map((s) => (
-          <div key={s.label} className={`rounded-2xl p-3 ${BRAND[s.color].soft}`}>
-            <dt className="text-[11px] text-muted-foreground">{s.label}</dt>
-            <dd className={`font-heading text-2xl font-semibold tabular-nums ${BRAND[s.color].text}`}>{s.value}</dd>
-            <dd className="text-[11px] text-muted-foreground">{s.note}</dd>
+          <div key={s.label} className="px-2">
+            <dd className={`font-heading text-2xl font-semibold tabular-nums ${TEXT[s.color]}`}>{s.value}</dd>
+            <dt className="text-[11px] leading-tight text-muted-foreground">{s.label}</dt>
           </div>
         ))}
       </dl>
+      <figcaption className="mt-6 text-[11px] text-muted-foreground">Exemplo ilustrativo</figcaption>
+    </figure>
+  );
+}
+
+/** Plano em forma de recibo: o que um pagamento cobre. */
+function Receipt() {
+  return (
+    <div className="relative mx-auto w-full max-w-md -rotate-1 bg-card font-mono text-sm shadow-2xl ring-1 ring-foreground/10">
+      <div className="flex items-center justify-between px-7 pt-7">
+        <Logo className="h-6" />
+        <span className="text-xs text-muted-foreground">plano anual</span>
+      </div>
+      <ul className="grid gap-2.5 px-7 pt-6 pb-7">
+        {RECEIPT.map(([item, value]) => (
+          <li key={item} className="flex items-end">
+            <span>{item}</span>
+            <span className="mx-2 mb-1 flex-1 border-b border-dotted border-foreground/30" aria-hidden />
+            <span className="tabular-nums">{value}</span>
+          </li>
+        ))}
+      </ul>
+      {/* Picote: os recortes têm a cor do fundo da seção do plano. */}
+      <div className="relative border-t-2 border-dashed border-foreground/15">
+        <span className="absolute -top-3 -left-3 size-6 rounded-full bg-[#1A73E8] dark:bg-[#0B3B8C]" aria-hidden />
+        <span className="absolute -top-3 -right-3 size-6 rounded-full bg-[#1A73E8] dark:bg-[#0B3B8C]" aria-hidden />
+      </div>
+      <ul className="grid gap-2.5 px-7 pt-6 pb-7">
+        <li className="flex items-end">
+          <span>Mensalidade</span>
+          <span className="mx-2 mb-1 flex-1 border-b border-dotted border-foreground/30" aria-hidden />
+          <span className={TEXT.green}>R$ 0</span>
+        </li>
+        <li className="flex items-end text-base font-semibold">
+          <span>Pagamento</span>
+          <span className="mx-2 mb-1 flex-1 border-b border-dotted border-foreground/30" aria-hidden />
+          <span>único</span>
+        </li>
+      </ul>
+      <div className="flex h-2" aria-hidden>
+        <span className="flex-1 bg-[#4285F4]" />
+        <span className="flex-1 bg-[#EA4335]" />
+        <span className="flex-1 bg-[#FBBC05]" />
+        <span className="flex-1 bg-[#34A853]" />
+      </div>
     </div>
   );
 }
@@ -293,50 +306,25 @@ export default async function LandingPage() {
       </header>
 
       <main className="flex-1">
-        {/* Hero: a animação mostra a placa funcionando; o cartão, o relatório do mês. */}
+        {/* Hero: a animação mostra a placa funcionando. */}
         <section className="relative overflow-hidden bg-brand-surface">
-          <div className="pointer-events-none absolute inset-0" aria-hidden>
-            <div className="absolute -top-32 right-[-8rem] size-[30rem] rounded-full bg-[#4285F4]/20 blur-3xl" />
-            <div className="absolute top-1/3 right-1/3 size-[18rem] rounded-full bg-[#FBBC05]/15 blur-3xl" />
-            <div className="absolute -bottom-24 left-[-6rem] size-[24rem] rounded-full bg-[#34A853]/15 blur-3xl" />
-            <div className="absolute top-10 left-1/3 size-[12rem] rounded-full bg-[#EA4335]/10 blur-3xl" />
-          </div>
-          <div className="relative mx-auto grid w-full max-w-6xl items-center gap-10 px-4 pt-12 pb-16 md:grid-cols-[1.05fr_1fr] md:py-24">
+          <div className="relative mx-auto grid w-full max-w-6xl items-center gap-10 px-4 pt-14 pb-16 md:grid-cols-[1.1fr_1fr] md:py-24">
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <p className="mb-5 inline-flex items-center gap-2 rounded-full bg-background/80 px-3 py-1.5 text-sm font-medium ring-1 ring-foreground/10 backdrop-blur">
-                <span className="flex gap-0.5" aria-hidden>
-                  {(["#4285F4", "#EA4335", "#FBBC05", "#34A853"] as const).map((c) => (
-                    <span key={c} className="size-2 rounded-full" style={{ background: c }} />
-                  ))}
-                </span>
+              <p className="mb-6 flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <LogoIcon className="h-5" title="" />
                 Monitoramento de reputação no Google Maps
               </p>
-              <h1 className="text-5xl leading-[1.04] font-semibold tracking-tight text-balance sm:text-6xl">
-                Mais avaliações. Mais destaque no Maps.{" "}
-                <span className="bg-gradient-to-r from-[#1A73E8] via-[#34A853] to-[#FBBC05] bg-clip-text text-transparent">
-                  Acompanhado todo mês.
-                </span>
+              <h1 className="text-5xl leading-[1.02] font-semibold tracking-tight text-balance sm:text-7xl">
+                Seu cliente procura no Google. <span className={TEXT.blue}>Você aparece em que lugar?</span>
               </h1>
-              <p className="mt-5 max-w-lg text-lg text-pretty text-muted-foreground">
-                Durante 12 meses, a TopTap ajuda o seu negócio a crescer no Google: uma placa para o cliente avaliar em um toque e um
-                relatório por mês com sua posição, seus concorrentes e o próximo passo.
+              <p className="mt-6 max-w-lg text-lg text-pretty text-muted-foreground">
+                Por 12 meses, a TopTap coloca uma placa no seu balcão para o cliente avaliar em um toque e te entrega, todo mês, um
+                relatório com sua posição no Maps, seus concorrentes e o próximo passo.
               </p>
-              <div className="mt-7 flex flex-wrap items-center gap-3">
+              <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
                 <CtaButton>Fazer diagnóstico grátis</CtaButton>
-                <a
-                  href="#relatorio"
-                  className="inline-flex h-11 items-center rounded-lg px-4 text-base font-medium text-foreground hover:bg-muted"
-                >
-                  Ver o relatório
-                </a>
+                <span className="text-sm text-muted-foreground">Pagamento único. Sem mensalidade.</span>
               </div>
-              <ul className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
-                {["Pagamento único", "Sem mensalidade", "12 relatórios mensais"].map((item) => (
-                  <li key={item} className="flex items-center gap-1.5">
-                    <CheckIcon className="size-4 shrink-0 text-[#34A853]" /> {item}
-                  </li>
-                ))}
-              </ul>
             </div>
 
             <div className="relative mx-auto flex h-[24rem] w-full max-w-md items-center sm:h-[28rem]" aria-hidden>
@@ -358,302 +346,229 @@ export default async function LandingPage() {
                   <PhoneMock />
                 </div>
               </div>
-              {/* Resumo do relatório do mês (ilustrativo). */}
-              <div className="tt-float absolute top-2 -left-2 z-20 flex items-center gap-3 rounded-2xl bg-card px-3.5 py-2.5 shadow-xl ring-1 ring-foreground/10 sm:-left-8">
-                <IconBadge icon={TrendingUpIcon} color="green" className="size-9 rounded-xl" />
-                <span className="text-left">
-                  <span className="block text-[11px] text-muted-foreground">Relatório do mês</span>
-                  <span className="block text-sm font-semibold">
-                    5º → <span className={BRAND.green.text}>3º lugar</span> no Maps
-                  </span>
-                </span>
-              </div>
             </div>
           </div>
         </section>
 
-        {/* Os quatro pilares do serviço, um em cada cor. */}
-        <section className="mx-auto w-full max-w-6xl px-4 py-20">
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {PILLARS.map((p) => (
-              <li
-                key={p.title}
-                className="tt-reveal group relative overflow-hidden rounded-3xl bg-card p-6 ring-1 ring-foreground/10 transition hover:-translate-y-1 hover:shadow-xl"
-              >
-                <span className="absolute inset-x-0 top-0 h-1" style={{ background: BRAND[p.color].fg }} aria-hidden />
-                <IconBadge icon={p.icon} color={p.color} className="mb-5 size-12 rounded-2xl transition group-hover:scale-110 group-hover:rotate-6" />
-                <h3 className="mb-1 text-xl font-semibold">{p.title}</h3>
-                <p className="text-sm text-muted-foreground">{p.text}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        {/* Problema → solução */}
-        <section className="bg-brand-surface py-24">
-          <div className="mx-auto w-full max-w-6xl px-4">
-            <SectionTitle
-              eyebrow="O problema"
-              color="red"
-              title="Quem tem mais avaliações aparece primeiro. E leva o cliente."
-              text="O Google é onde o brasileiro procura onde comer, cortar o cabelo ou levar o carro. O cliente satisfeito até quer avaliar, mas são cinco passos. E ninguém te avisa quando o concorrente passa na sua frente."
-            />
-            <div className="mx-auto grid max-w-4xl gap-4 md:grid-cols-2">
-              <div className="tt-reveal rounded-3xl bg-card p-7 ring-1 ring-foreground/10">
-                <p className="mb-5 font-heading text-lg font-semibold">Hoje: 5 passos para avaliar</p>
-                <ol className="grid gap-3">
-                  {BEFORE.map((step, i) => (
-                    <li key={step} className="flex items-center gap-3 text-muted-foreground">
-                      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#EA4335]/12 text-xs font-medium text-[#C5221F] tabular-nums dark:text-[#F28B82]">
-                        {i + 1}
-                      </span>
-                      <span
-                        className="tt-strike bg-[linear-gradient(#EA4335,#EA4335)] bg-size-[100%_2px] bg-position-[0_55%] bg-no-repeat opacity-55"
-                        style={{ "--i": i } as React.CSSProperties}
-                      >
-                        {step}
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-              <div className="tt-reveal relative flex flex-col justify-between gap-8 overflow-hidden rounded-3xl bg-gradient-to-br from-[#1A73E8] to-[#174EA6] p-7 text-white">
-                <div className="absolute -right-10 -bottom-10 size-48 rounded-full bg-[#34A853]/40 blur-2xl" aria-hidden />
-                <p className="relative font-heading text-lg font-semibold">Com TopTap</p>
-                <div className="relative">
-                  <p className="font-heading text-7xl leading-none font-semibold tracking-tight sm:text-8xl">1 toque</p>
-                  <p className="mt-3 text-lg opacity-90">para avaliar. E um relatório por mês para você saber se está funcionando.</p>
-                </div>
-              </div>
-            </div>
-            <p className="tt-reveal mx-auto mt-8 max-w-2xl text-center text-xs text-muted-foreground">
-              Segundo a pesquisa Local Consumer Review Survey 2025, da BrightLocal, 83% dos consumidores usam o Google para ler avaliações.
-            </p>
-          </div>
-        </section>
-
-        {/* Como funciona */}
-        <section id="como-funciona" className="mx-auto w-full max-w-6xl scroll-mt-16 px-4 py-24">
-          <SectionTitle eyebrow="Como funciona" title="Um ano cuidando da sua reputação." text="Você atende bem. A gente transforma isso em avaliação e acompanha o resultado." />
-          <ol className="grid gap-4 md:grid-cols-3">
-            {STEPS.map((s, i) => (
-              <li key={s.title} className="tt-reveal relative flex flex-col items-center rounded-3xl bg-card p-7 text-center ring-1 ring-foreground/10">
-                <span
-                  className="mb-5 flex size-14 items-center justify-center rounded-full text-white shadow-lg ring-4 ring-background"
-                  style={{ background: BRAND[s.color].fg }}
-                >
-                  <s.icon className="size-6" />
-                </span>
-                <p className={`text-xs font-semibold tracking-wide uppercase ${BRAND[s.color].text}`}>
-                  {i + 1}. {s.when}
+        {/* O problema: a busca no Maps, como o cliente vê. */}
+        <section id="problema" className="mx-auto w-full max-w-6xl scroll-mt-16 px-4 py-24 md:py-32">
+          <div className="grid items-center gap-14 md:grid-cols-[1fr_1fr]">
+            <div>
+              <Heading kicker="O problema">
+                Nota 4,9. <span className={TEXT.red}>E em 4º lugar.</span>
+              </Heading>
+              <div className="tt-reveal mt-6 grid max-w-md gap-4 text-lg text-pretty text-muted-foreground">
+                <p>
+                  Quem tem mais avaliações passa mais confiança, para o cliente e para o Google. Com 41 avaliações contra 612, a melhor
+                  padaria do bairro fica escondida.
                 </p>
-                <h3 className="mt-1 mb-2 text-2xl font-semibold">{s.title}</h3>
-                <p className="text-muted-foreground">{s.text}</p>
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        {/* Relatório mensal */}
-        <section id="relatorio" className="relative scroll-mt-16 overflow-hidden bg-brand-surface py-24">
-          <div className="pointer-events-none absolute top-1/4 -right-32 size-[26rem] rounded-full bg-[#34A853]/12 blur-3xl" aria-hidden />
-          <div className="relative mx-auto grid w-full max-w-6xl items-center gap-12 px-4 md:grid-cols-[1fr_1.05fr]">
-            <div className="tt-reveal">
-              <p className={`mb-3 inline-flex rounded-full px-3 py-1 text-sm font-semibold ${BRAND.green.soft} ${BRAND.green.text}`}>
-                Relatório mensal
-              </p>
-              <h2 className="text-3xl font-semibold tracking-tight text-balance sm:text-5xl">Seu Google Maps, mês a mês.</h2>
-              <p className="mt-4 text-lg text-pretty text-muted-foreground">
-                Todo mês, um relatório novo comparado com o anterior. Sem planilha e sem termo técnico: você entende em dois minutos.
-              </p>
-              <ul className="mt-8 grid gap-x-6 gap-y-5 sm:grid-cols-2">
-                {REPORT_ITEMS.map((item) => (
-                  <li key={item.title} className="flex gap-3">
-                    <IconBadge icon={item.icon} color={item.color} className="size-10 rounded-xl" />
-                    <span>
-                      <span className="block font-medium">{item.title}</span>
-                      <span className="block text-sm text-muted-foreground">{item.text}</span>
+                <p>O cliente satisfeito até quer avaliar. Mas, para isso, precisa:</p>
+              </div>
+              <ol className="tt-reveal mt-4 grid max-w-md gap-1.5">
+                {BEFORE.map((step, i) => (
+                  <li key={step} className="flex items-baseline gap-3 text-muted-foreground">
+                    <span className="w-4 text-sm tabular-nums">{i + 1}.</span>
+                    <span
+                      className="tt-strike bg-[linear-gradient(#EA4335,#EA4335)] bg-size-[100%_2px] bg-position-[0_55%] bg-no-repeat"
+                      style={{ "--i": i } as React.CSSProperties}
+                    >
+                      {step}
                     </span>
                   </li>
                 ))}
-              </ul>
+              </ol>
+              <p className="tt-reveal mt-6 max-w-md text-lg font-medium">
+                Com a placa TopTap, é <span className={TEXT.blue}>um toque</span>. E você não fica sem saber se o concorrente passou na sua
+                frente.
+              </p>
             </div>
             <div className="tt-reveal">
+              <MapsResults />
+              <p className="mt-4 text-xs text-muted-foreground">
+                83% dos consumidores leem avaliações no Google (BrightLocal, Local Consumer Review Survey 2025).
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* O ano: linha do tempo dos 12 meses. */}
+        <section id="ano" className="scroll-mt-16 border-y bg-brand-surface py-24 md:py-32">
+          <div className="mx-auto w-full max-w-6xl px-4">
+            <Heading kicker="Como funciona">Um ano inteiro de olho no seu Google.</Heading>
+
+            <div className="tt-reveal mt-16 -mx-4 overflow-x-auto px-4 pb-2">
+              <ol className="grid min-w-[44rem] grid-cols-13" aria-label="Linha do tempo do plano">
+                {Array.from({ length: 13 }, (_, m) => {
+                  const milestone = MILESTONES[m];
+                  return (
+                    <li key={m} className="relative flex flex-col items-center">
+                      <span className="absolute top-[0.6875rem] h-px w-full bg-foreground/15" aria-hidden />
+                      <span
+                        className={`relative rounded-full ring-4 ring-brand-surface ${milestone ? `size-6 ${milestone.dot}` : "mt-1.5 size-3 bg-foreground/25"}`}
+                      />
+                      <span className="mt-3 text-xs text-muted-foreground tabular-nums">{m === 0 ? "hoje" : `mês ${m}`}</span>
+                      {milestone && (
+                        <span className={`mt-1 text-center text-xs font-semibold text-balance ${TEXT[milestone.color]}`}>{milestone.title}</span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+
+            <div className="mt-14 grid gap-10 md:grid-cols-3">
+              {[
+                {
+                  n: "Hoje",
+                  title: "Diagnóstico grátis",
+                  text: "Achamos seu negócio no Google e mostramos em que lugar você está e quantas avaliações faltam para subir.",
+                  color: "border-[#4285F4]",
+                },
+                {
+                  n: "Mês 1",
+                  title: "A placa chega pronta",
+                  text: "Com o link da sua avaliação já gravado. Você cola no balcão e os clientes passam a avaliar em um toque.",
+                  color: "border-[#FBBC05]",
+                },
+                {
+                  n: "Todo mês",
+                  title: "Um relatório novo",
+                  text: "Comparado com o mês anterior: subiu ou caiu, quem chegou perto, o que responder e o que melhorar no perfil.",
+                  color: "border-[#34A853]",
+                },
+              ].map((s) => (
+                <div key={s.title} className={`tt-reveal border-t-2 pt-5 ${s.color}`}>
+                  <p className="text-sm text-muted-foreground">{s.n}</p>
+                  <h3 className="mt-1 text-2xl font-semibold">{s.title}</h3>
+                  <p className="mt-2 text-pretty text-muted-foreground">{s.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Relatório mensal */}
+        <section id="relatorio" className="mx-auto w-full max-w-6xl scroll-mt-16 px-4 py-24 md:py-32">
+          <div className="grid items-start gap-14 md:grid-cols-[1fr_1fr]">
+            <div>
+              <Heading kicker="Relatório mensal">Seu Google Maps, mês a mês.</Heading>
+              <p className="tt-reveal mt-6 max-w-md text-lg text-pretty text-muted-foreground">
+                Sem planilha e sem termo técnico. Em dois minutos você sabe onde está, quem está na frente e o que fazer.
+              </p>
+              <ol className="tt-reveal mt-10 border-t">
+                {REPORT_ITEMS.map(([title, text], i) => (
+                  <li key={title} className="grid grid-cols-[2.5rem_1fr] gap-x-2 border-b py-4 sm:grid-cols-[2.5rem_12rem_1fr]">
+                    <span className="font-mono text-sm text-muted-foreground tabular-nums">{String(i + 1).padStart(2, "0")}</span>
+                    <span className="font-medium">{title}</span>
+                    <span className="col-start-2 text-sm text-muted-foreground sm:col-start-3">{text}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+            <div className="tt-reveal md:sticky md:top-24">
               <ReportMock />
             </div>
           </div>
         </section>
 
         {/* Plano: pagamento único, 12 meses */}
-        <section id="plano" className="mx-auto w-full max-w-6xl scroll-mt-16 px-4 py-24">
-          <SectionTitle
-            eyebrow="O plano"
-            color="yellow"
-            title="Um pagamento. 12 meses de acompanhamento."
-            text="Nada de mensalidade nem fidelidade. Você paga uma vez e tem um ano inteiro de monitoramento."
-          />
-          <div className="tt-reveal mx-auto grid max-w-5xl overflow-hidden rounded-3xl ring-1 ring-foreground/10 md:grid-cols-[1fr_1.1fr]">
-            <div className="relative flex flex-col justify-between gap-8 overflow-hidden bg-gradient-to-br from-[#1A73E8] via-[#1967D2] to-[#174EA6] p-8 text-white">
-              <div className="absolute -top-16 -right-16 size-56 rounded-full bg-[#FBBC05]/30 blur-3xl" aria-hidden />
-              <div className="relative">
-                <p className="font-heading text-lg font-semibold">Plano anual TopTap</p>
-                <p className="mt-6 font-heading text-6xl leading-none font-semibold tracking-tight">12 meses</p>
-                <p className="mt-2 text-lg opacity-90">12 relatórios · 1 placa · 1 pagamento</p>
-              </div>
-              <div className="relative grid grid-cols-12 gap-1" aria-label="Um relatório por mês, durante 12 meses">
-                {Array.from({ length: 12 }, (_, i) => (
-                  <span key={i} className="flex aspect-square items-center justify-center rounded-md bg-white/15 text-[10px] font-semibold tabular-nums">
-                    {i + 1}
-                  </span>
-                ))}
-              </div>
-              <div className="relative">
+        <section id="plano" className="scroll-mt-16 bg-[#1A73E8] py-24 text-white md:py-32 dark:bg-[#0B3B8C]">
+          <div className="mx-auto grid w-full max-w-6xl items-center gap-16 px-4 md:grid-cols-[1fr_1fr]">
+            <div className="tt-reveal">
+              <p className="mb-4 text-sm font-medium text-white/75">O plano</p>
+              <h2 className="text-4xl leading-[1.05] font-semibold tracking-tight text-balance sm:text-6xl">
+                Paga uma vez. Acompanha o ano todo.
+              </h2>
+              <p className="mt-6 max-w-md text-lg text-pretty text-white/85">
+                Nada de mensalidade nem fidelidade. Um pagamento cobre a placa e 12 meses de relatórios. Antes de decidir, você vê o
+                diagnóstico de graça.
+              </p>
+              <div className="mt-8">
                 <CtaButton variant="secondary">Começar pelo diagnóstico</CtaButton>
               </div>
             </div>
-            <div className="bg-card p-8">
-              <p className="mb-5 font-heading text-lg font-semibold">O que está incluso</p>
-              <ul className="grid gap-3.5">
-                {INCLUDED.map((item, i) => {
-                  const color = (["blue", "red", "yellow", "green"] as const)[i % 4];
-                  return (
-                    <li key={item} className="flex items-start gap-3">
-                      <IconBadge icon={CheckIcon} color={color} className="mt-0.5 size-6 rounded-full" />
-                      <span>{item}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-              <div className="mt-8 grid grid-cols-3 gap-2 text-center text-sm">
-                {(
-                  [
-                    { icon: WalletIcon, label: "Sem mensalidade", color: "red" },
-                    { icon: SmartphoneNfcIcon, label: "Sem app", color: "blue" },
-                    { icon: HandshakeIcon, label: "Sem fidelidade", color: "green" },
-                  ] as const
-                ).map((b) => (
-                  <div key={b.label} className={`rounded-2xl px-2 py-3 ${BRAND[b.color].soft}`}>
-                    <b.icon className={`mx-auto mb-1 size-5 ${BRAND[b.color].text}`} />
-                    <span className="font-medium">{b.label}</span>
-                  </div>
-                ))}
-              </div>
+            <div className="tt-reveal text-foreground">
+              <Receipt />
             </div>
           </div>
         </section>
 
-        {/* Segmentos rolando */}
-        <section className="bg-brand-surface py-16">
-          <p className="tt-reveal mb-6 text-center text-sm font-medium text-muted-foreground">Para quem depende do cliente que procura no Google</p>
-          <div className="overflow-hidden mask-x-from-85% mask-x-to-100%" aria-label="Para quem é">
-            <ul className="tt-marquee flex w-max gap-3">
-              {[...SEGMENTS, ...SEGMENTS].map(({ icon: Icon, label }, i) => {
-                const color = (["blue", "red", "yellow", "green"] as const)[i % 4];
-                return (
-                  <li
-                    key={i}
-                    aria-hidden={i >= SEGMENTS.length}
-                    className="flex shrink-0 items-center gap-2 rounded-full bg-background px-4 py-2 text-sm ring-1 ring-foreground/10"
-                  >
-                    <Icon className={`size-4 ${BRAND[color].text}`} /> {label}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </section>
-
-        {/* Personalizado */}
-        <section id="personalizado" className="scroll-mt-16 py-24">
-          <div className="tt-reveal mx-auto flex w-full max-w-3xl flex-col items-center px-4 text-center">
-            <p className={`mb-3 inline-flex rounded-full px-3 py-1 text-sm font-semibold ${BRAND.red.soft} ${BRAND.red.text}`}>Vai além da avaliação</p>
-            <h2 className="text-3xl font-semibold tracking-tight text-balance sm:text-5xl">Com a sua marca. Para onde quiser.</h2>
-            <p className="mt-4 text-lg text-pretty text-muted-foreground">
-              Placas e cartões com a identidade do seu negócio, levando o cliente para o Instagram, o cardápio, o Pix ou a senha do Wi-Fi.
-            </p>
-            <ul className="mt-8 flex flex-wrap justify-center gap-2">
-              {DESTINATIONS.map(({ icon: Icon, label }, i) => {
-                const color = (["blue", "red", "yellow", "green"] as const)[i % 4];
-                return (
-                  <li
-                    key={label}
-                    className="flex items-center gap-1.5 rounded-full bg-background px-4 py-2 text-sm ring-1 ring-foreground/10 transition hover:-translate-y-0.5 hover:ring-primary"
-                  >
-                    <Icon className={`size-4 ${BRAND[color].text}`} /> {label}
-                  </li>
-                );
-              })}
-            </ul>
-            <div className="mt-8">
-              {settings.whatsapp ? (
-                <a
-                  href={whatsappHref(
-                    settings.whatsapp,
-                    "Olá! Quero um orçamento de placa/cartão TopTap personalizado com a identidade visual do meu negócio.",
-                  )}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#25D366] px-5 text-base font-semibold text-[#063D1E] hover:brightness-95"
-                >
-                  <MessageCircleIcon className="size-5" /> Pedir orçamento
-                </a>
-              ) : (
-                <CtaButton>Pedir orçamento</CtaButton>
-              )}
-            </div>
-          </div>
+        {/* Para quem é */}
+        <section className="mx-auto w-full max-w-6xl px-4 py-20">
+          <p className="tt-reveal max-w-4xl font-heading text-2xl leading-snug font-medium text-balance sm:text-3xl">
+            <span className="text-muted-foreground">Para quem depende do cliente que procura no Google: </span>
+            {SEGMENTS.map((s, i) => (
+              <span key={s}>
+                {s}
+                {i < SEGMENTS.length - 1 && <span className={["text-[#4285F4]", "text-[#EA4335]", "text-[#FBBC05]", "text-[#34A853]"][i % 4]}> • </span>}
+              </span>
+            ))}
+            .
+          </p>
+          <p className="tt-reveal mt-8 max-w-xl text-pretty text-muted-foreground">
+            Também fazemos placas e cartões com a sua marca, levando o cliente para o Instagram, o cardápio, o Pix ou a senha do Wi-Fi.{" "}
+            {settings.whatsapp && (
+              <a
+                href={whatsappHref(
+                  settings.whatsapp,
+                  "Olá! Quero um orçamento de placa/cartão TopTap personalizado com a identidade visual do meu negócio.",
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 font-medium text-foreground underline underline-offset-4 hover:text-primary"
+              >
+                <MessageCircleIcon className="size-4" /> Pedir orçamento
+              </a>
+            )}
+          </p>
         </section>
 
         {/* Dúvidas */}
-        <section id="duvidas" className="mx-auto w-full max-w-3xl scroll-mt-16 px-4 pb-24">
-          <SectionTitle eyebrow="Dúvidas" title="Perguntas frequentes" />
-          <div className="tt-reveal divide-y rounded-3xl bg-card ring-1 ring-foreground/10">
-            {FAQ.map(({ q, a }) => (
-              <details key={q} className="group px-6 py-5 [&_summary::-webkit-details-marker]:hidden">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium">
-                  {q}
-                  <span className="text-xl leading-none text-primary transition group-open:rotate-45" aria-hidden>
-                    +
-                  </span>
-                </summary>
-                <p className="mt-3 text-pretty text-muted-foreground">{a}</p>
-              </details>
-            ))}
+        <section id="duvidas" className="mx-auto w-full max-w-6xl scroll-mt-16 border-t px-4 py-24">
+          <div className="grid gap-12 md:grid-cols-[1fr_1.4fr]">
+            <Heading kicker="Dúvidas">Antes de você perguntar.</Heading>
+            <div className="tt-reveal divide-y border-y">
+              {FAQ.map(({ q, a }) => (
+                <details key={q} className="group py-5 [&_summary::-webkit-details-marker]:hidden">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-medium">
+                    {q}
+                    <span className="text-2xl leading-none text-muted-foreground transition group-open:rotate-45" aria-hidden>
+                      +
+                    </span>
+                  </summary>
+                  <p className="mt-3 max-w-xl text-pretty text-muted-foreground">{a}</p>
+                </details>
+              ))}
+            </div>
           </div>
         </section>
 
         {/* CTA final */}
         <section className="px-4 pb-24">
-          <div className="tt-reveal relative mx-auto flex max-w-5xl flex-col items-center gap-7 overflow-hidden rounded-3xl bg-gradient-to-br from-[#1A73E8] to-[#174EA6] px-6 py-16 text-center text-white">
-            <div className="pointer-events-none absolute inset-0" aria-hidden>
-              <div className="absolute -top-20 -left-16 size-64 rounded-full bg-[#EA4335]/30 blur-3xl" />
-              <div className="absolute -right-10 -bottom-24 size-72 rounded-full bg-[#34A853]/35 blur-3xl" />
-              <div className="absolute top-0 right-1/4 size-40 rounded-full bg-[#FBBC05]/25 blur-3xl" />
+          <div className="tt-reveal relative mx-auto grid max-w-6xl items-center gap-10 overflow-hidden rounded-[2rem] bg-[#202124] px-8 py-14 text-white sm:px-14 md:grid-cols-[1.4fr_1fr]">
+            <div className="relative">
+              <h2 className="text-4xl leading-[1.05] font-semibold tracking-tight text-balance sm:text-5xl">
+                Descubra em que lugar você está no Google Maps.
+              </h2>
+              <p className="mt-5 max-w-lg text-lg text-pretty text-white/75">
+                O diagnóstico é grátis e leva um minuto: sua posição, seus concorrentes e quantas avaliações faltam.
+              </p>
+              <div className="mt-8">
+                <CtaButton>Fazer diagnóstico grátis</CtaButton>
+              </div>
             </div>
-            <div className="relative flex gap-1" aria-hidden>
-              {Array.from({ length: 5 }, (_, i) => (
-                <StarIcon key={i} className="size-7 fill-[#FBBC05] text-[#FBBC05]" />
-              ))}
-            </div>
-            <h2 className="relative max-w-2xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
-              Descubra em que lugar você está no Google Maps.
-            </h2>
-            <p className="relative max-w-xl text-lg text-pretty opacity-90">
-              O diagnóstico é grátis e leva um minuto: você vê sua posição, seus concorrentes e quantas avaliações faltam.
-            </p>
-            <CtaButton variant="secondary" className="relative">
-              Fazer diagnóstico grátis
-            </CtaButton>
+            <svg viewBox="58 50 92 140" className="mx-auto hidden h-56 w-auto md:block" aria-hidden>
+              <NfcWaves strokeWidth={12} />
+            </svg>
           </div>
         </section>
       </main>
 
       <footer className="border-t">
-        <BrandStripe className="mx-auto -mt-px h-1 w-full max-w-6xl rounded-none" />
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <Logo className="h-6" />
-            <span>© {new Date().getFullYear()} {siteConfig.name} · Monitoramento de reputação no Google Maps</span>
+            <span>© {new Date().getFullYear()} {siteConfig.name}</span>
           </div>
           <div className="flex flex-wrap gap-4">
             {siteConfig.instagram && (
