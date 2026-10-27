@@ -119,6 +119,10 @@ Configuração no Supabase (Authentication):
    em qualquer navegador (o modelo padrão manda o token no `#` da URL, que o app não lê).
    Mesmo com o modelo padrão (em inglês), o link funciona: o Supabase volta com a sessão no `#` da URL e o
    componente `SessionFromHash` (layout raiz) grava a sessão e abre a `/conta`.
+   Os outros modelos (Confirm signup, Invite user, Reset password, Change email address e Reauthentication)
+   ficam em `supabase/templates/` com o mesmo visual, e os assuntos em `supabase/config.toml`. Os botões também
+   apontam para `/auth/confirm` (com `type=signup`, `invite`, `recovery` ou `email_change`). Como o app não tem
+   tela de nova senha, o de recuperação só faz o login.
 3. **SMTP Settings**: configure um SMTP próprio (ex.: Resend). O envio padrão do Supabase só entrega para e-mails da equipe do projeto e poucas mensagens por hora.
 
 ## Métricas do Google Maps (Apify)
