@@ -134,7 +134,8 @@ export async function syncReport(supabase: Client, reportId: string): Promise<St
  * Relatório mensal dos clientes com plano valendo: finaliza os que ainda estão
  * gerando e inicia um novo para quem teve o último há 30 dias ou mais, com a
  * mesma busca (termo e região) do último relatório pronto. Sem relatório
- * anterior não há busca para repetir: o primeiro é gerado no painel.
+ * anterior não há busca para repetir: o primeiro sai na ativação da peça ou
+ * é gerado no painel.
  */
 export async function runMonthlyReports(supabase: Client, now = new Date()) {
   const { data: running } = await supabase

@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { ChevronRightIcon, ClockIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { AnalysisDetails } from "@/components/google/analysis-details";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProduct } from "@/lib/card";
 import { isCurrentUserAdmin, listMemberships } from "@/lib/data";
 import { formatDate, formatNumber } from "@/lib/format";
+import { readAnalysis } from "@/lib/google-analysis";
 import { LINK_TYPE_INFO, type LinkType } from "@/lib/link-types";
 import { readMarketData } from "@/lib/market";
 import { siteConfig } from "@/lib/site-config";
@@ -13,6 +15,28 @@ import { siteConfig } from "@/lib/site-config";
 export const metadata: Metadata = { title: "Minha conta", robots: { index: false, follow: false } };
 
 const plural = (n: number, one: string, many: string) => `${formatNumber(n)} ${n === 1 ? one : many}`;
+
+/** Análise do perfil do Google feita pela IA (sem a mensagem de venda, que é do painel). */
+function ProfileAnalysis({ snapshot }: { snapshot?: { analysis: unknown; analyzed_at: string | null } }) {
+  const analysis = readAnalysis(snapshot?.analysis);
+  if (!analysis) return null;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex flex-wrap items-center gap-2">
+          Seu perfil no Google <Badge variant="secondary">nota {analysis.nota}/100</Badge>
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          O que já funciona e o que mudar para aparecer mais no Maps
+          {snapshot?.analyzed_at && ` (análise de ${formatDate(snapshot.analyzed_at)})`}.
+        </p>
+      </CardHeader>
+      <CardContent className="grid gap-3">
+        <AnalysisDetails analysis={analysis} />
+      </CardContent>
+    </Card>
+  );
+}
 
 export default async function AccountPage() {
   const memberships = await listMemberships();
@@ -90,6 +114,8 @@ export default async function AccountPage() {
                 )}
               </CardContent>
             </Card>
+
+            <ProfileAnalysis snapshot={business.place_snapshots[0]} />
 
             <div className="grid gap-4 md:grid-cols-2">
               <Card>

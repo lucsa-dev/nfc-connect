@@ -3,9 +3,11 @@
 import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { apifyEnabled } from "@/lib/apify";
 import { normalizeCode } from "@/lib/cards";
 import { analyzeSnapshot, collectProfiles, fetchPlaceProfile, metricsEnabled, saveSnapshot, storeProfiles } from "@/lib/google";
 import { businessSlugCandidates, mapsQueryOf } from "@/lib/leads";
+import { startReport } from "@/lib/market-server";
 import { addMember, sendAccessLink } from "@/lib/members";
 import { normalizeGoogleReviewUrl, PLACE_ID_PATTERN, reviewUrl, type PlaceProfile } from "@/lib/places";
 import { normalizeBrPhone } from "@/lib/quiz";
@@ -210,6 +212,32 @@ export async function activateCard(rawCode: string, input: ActivationInput, rawO
     .single();
   if (planned?.place_id) {
     await supabase.from("market_reports").update({ business_id: businessId }).eq("place_id", planned.place_id).is("business_id", null);
+  }
+
+  // Sem relatório anterior o mensal não tem busca para repetir: o primeiro sai
+  // agora, com a categoria e a cidade do perfil ("padaria" em "Fortaleza - CE").
+  // O cron dos relatórios finaliza a coleta na rodada seguinte.
+  const term = profile?.category?.toLocaleLowerCase("pt-BR") ?? "";
+  const area = [profile?.city, profile?.state].filter(Boolean).join(" - ");
+  if (profile && apifyEnabled() && term.length >= 2 && area.length >= 2) {
+    const reportBusinessId = businessId;
+    const reportProfile = profile;
+    after(async () => {
+      const { count } = await supabase
+        .from("market_reports")
+        .select("id", { count: "exact", head: true })
+        .eq("business_id", reportBusinessId)
+        .neq("status", "failed");
+      if (count) return;
+      await startReport(supabase, {
+        businessId: reportBusinessId,
+        placeId: reportProfile.placeId,
+        name: reportProfile.name,
+        term: term.slice(0, 80),
+        area: area.slice(0, 120),
+        ownerId: card.owner_id,
+      }).catch((error) => console.error("Falha ao iniciar o primeiro relatório", reportBusinessId, error));
+    });
   }
 
   // Acesso do dono à área /conta: o link segue por e-mail depois da resposta.

@@ -32,11 +32,15 @@ export async function listMemberships() {
       `status, business:businesses(id, name, slug, plan_expires_at,
         links(id, name, type, slug, is_active, click_count),
         cards(id, code, visit_count, activated_at, batch:card_batches(product)),
-        market_reports(id, token, term, area, created_at, data))`,
+        market_reports(id, token, term, area, created_at, data),
+        place_snapshots(analysis, analyzed_at))`,
     )
     .eq("user_id", userId)
+    .not("businesses.place_snapshots.analysis", "is", null)
     .order("created_at", { referencedTable: "businesses.links", ascending: true })
-    .order("created_at", { referencedTable: "businesses.market_reports", ascending: false });
+    .order("created_at", { referencedTable: "businesses.market_reports", ascending: false })
+    .order("created_at", { referencedTable: "businesses.place_snapshots", ascending: false })
+    .limit(1, { referencedTable: "businesses.place_snapshots" });
   if (error) throw error;
   return data;
 }
