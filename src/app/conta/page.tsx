@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ChevronRightIcon, ClockIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AnalysisDetails } from "@/components/google/analysis-details";
+import { RunPoller } from "@/components/market/market-actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProduct } from "@/lib/card";
 import { isCurrentUserAdmin, listMemberships } from "@/lib/data";
@@ -11,8 +12,13 @@ import { readAnalysis } from "@/lib/google-analysis";
 import { LINK_TYPE_INFO, type LinkType } from "@/lib/link-types";
 import { readMarketData } from "@/lib/market";
 import { siteConfig } from "@/lib/site-config";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { checkBusinessReports } from "./actions";
 
 export const metadata: Metadata = { title: "Minha conta", robots: { index: false, follow: false } };
+
+// Ao terminar a coleta, a conferência do relatório roda a comparação da IA (até ~2 min).
+export const maxDuration = 300;
 
 const plural = (n: number, one: string, many: string) => `${formatNumber(n)} ${n === 1 ? one : many}`;
 
@@ -53,6 +59,14 @@ export default async function AccountPage() {
     );
   }
 
+  // Relatórios ainda gerando (o RLS do cliente só mostra os prontos): os negócios
+  // vêm da participação, então a consulta com a chave secreta fica restrita a eles.
+  const businessIds = memberships.flatMap(({ business }) => (business ? [business.id] : []));
+  const { data: running } = businessIds.length
+    ? await createAdminClient().from("market_reports").select("business_id").in("business_id", businessIds).eq("status", "running")
+    : { data: [] };
+  const generating = new Set(running?.map((r) => r.business_id));
+
   return (
     <div className="grid gap-10">
       {memberships.map(({ business }, i) =>
@@ -83,9 +97,17 @@ export default async function AccountPage() {
                 <CardTitle>Relatórios mensais</CardTitle>
                 <p className="text-sm text-muted-foreground">Sua posição no Google Maps, seus concorrentes e o que fazer para subir.</p>
               </CardHeader>
-              <CardContent>
+              <CardContent className="grid gap-3">
+                {generating.has(business.id) && (
+                  <RunPoller
+                    check={checkBusinessReports.bind(null, business.id)}
+                    message="Estamos preparando o seu relatório: buscando os concorrentes no Google Maps. Ele aparece aqui assim que ficar pronto."
+                  />
+                )}
                 {business.market_reports.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">O primeiro relatório aparece aqui assim que ficar pronto.</p>
+                  !generating.has(business.id) && (
+                    <p className="text-sm text-muted-foreground">O primeiro relatório aparece aqui assim que ficar pronto.</p>
+                  )
                 ) : (
                   <ul className="divide-y rounded-lg ring-1 ring-foreground/10">
                     {business.market_reports.map((r) => {
