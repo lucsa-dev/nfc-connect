@@ -8,6 +8,13 @@ export const LEAD_STATUS_LABEL = {
   descartado: "Descartado",
 } as const;
 
+/** Pagamento pelo Checkout PagBank (leads.payment_status). */
+export const PAYMENT_STATUS_LABEL: Record<string, string> = {
+  pendente: "Aguardando pagamento",
+  pago: "Pago",
+  recusado: "Pagamento recusado",
+};
+
 /** Slugs a tentar para o negócio criado a partir de um lead (o 1º livre vence). */
 export function businessSlugCandidates(name: string, city?: string | null): string[] {
   const base = slugify(name);

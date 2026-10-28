@@ -16,8 +16,10 @@ import {
   type PlaceInfo,
   type PlaceSuggestion,
 } from "@/lib/places";
-import { CLIENT_BANDS, estimateTimeline, normalizeBrPhone, recommendKit, SPOTS } from "@/lib/quiz";
+import { createCheckout, pagbankEnabled } from "@/lib/pagbank";
+import { CLIENT_BANDS, describeKit, estimateTimeline, normalizeBrPhone, recommendKit, SPOTS } from "@/lib/quiz";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getSiteUrl } from "@/lib/urls";
 import { getClientIp, hashIp } from "@/lib/visit";
 
 const apiKey = () => process.env.GOOGLE_PLACES_API_KEY;
@@ -236,11 +238,13 @@ export async function saveLead(payload: LeadPayload): Promise<{ ok: boolean; err
   // Leads já tratados no painel não são alterados pelo quiz.
   const { data: existing, error: readError } = await supabase
     .from("leads")
-    .select("status")
+    .select("status, payment_status")
     .eq("session_id", data.sessionId)
     .maybeSingle();
   if (readError) console.error("Falha ao ler lead", { code: readError.code, message: readError.message });
   if (existing && (existing.status === "convertido" || existing.status === "descartado")) return { ok: true };
+  // Pedido pago: o kit e o valor ficam como foram cobrados.
+  if (existing?.payment_status === "pago") return { ok: true };
 
   const row = {
     session_id: data.sessionId,
@@ -285,4 +289,57 @@ export async function saveLead(payload: LeadPayload): Promise<{ ok: boolean; err
     return { ok: false, error: `Não foi possível salvar${detail}` };
   }
   return { ok: true };
+}
+
+// Pagamento (Checkout PagBank) -----------------------------------------------------
+
+export type PaymentStart = { ok: true; url: string } | { ok: false; reason: "indisponivel" | "pago" | "erro" };
+
+/**
+ * Cria o checkout do pedido já salvo (saveLead) e devolve o link de pagamento.
+ * O valor vem do lead, recalculado no servidor, e não do navegador.
+ */
+export async function startPayment(sessionId: string): Promise<PaymentStart> {
+  if (!pagbankEnabled()) return { ok: false, reason: "indisponivel" };
+  if (!z.uuid().safeParse(sessionId).success) return { ok: false, reason: "erro" };
+
+  const supabase = createAdminClient();
+  const { data: lead } = await supabase
+    .from("leads")
+    .select("id, place_name, plaques, stickers, total_cents, payment_status, whatsapp")
+    .eq("session_id", sessionId)
+    .maybeSingle();
+  if (!lead || !lead.whatsapp || !lead.total_cents) return { ok: false, reason: "erro" };
+  if (lead.payment_status === "pago") return { ok: false, reason: "pago" };
+
+  const siteUrl = getSiteUrl();
+  const kit = describeKit({ plaques: 1, stickers: lead.stickers ?? 0, extraStickers: 0, totalCents: lead.total_cents });
+  try {
+    const checkout = await createCheckout({
+      referenceId: lead.id,
+      itemName: `TopTap: ${kit}${lead.place_name ? ` (${lead.place_name})` : ""}`,
+      amountCents: lead.total_cents,
+      redirectUrl: `${siteUrl}/comecar?pagamento=1`,
+      notificationUrl: `${siteUrl}/api/pagbank`,
+    });
+    const { error } = await supabase
+      .from("leads")
+      .update({ checkout_id: checkout.id, payment_status: "pendente" })
+      .eq("id", lead.id)
+      .neq("payment_status", "pago");
+    if (error) throw error;
+    return { ok: true, url: checkout.payUrl };
+  } catch (error) {
+    console.error("Falha ao criar o pagamento no PagBank", error);
+    return { ok: false, reason: "erro" };
+  }
+}
+
+export type PaymentStatus = "pendente" | "pago" | "recusado" | null;
+
+/** Situação do pagamento do pedido (a página de conclusão confere até confirmar). */
+export async function getPaymentStatus(sessionId: string): Promise<PaymentStatus> {
+  if (!z.uuid().safeParse(sessionId).success) return null;
+  const { data } = await createAdminClient().from("leads").select("payment_status").eq("session_id", sessionId).maybeSingle();
+  return (data?.payment_status as PaymentStatus) ?? null;
 }

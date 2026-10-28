@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { QuizLoader } from "@/components/quiz/quiz-loader";
 import { CARD_COPY, displayUrl, qrPath } from "@/lib/card";
 import { apifyEnabled } from "@/lib/apify";
+import { pagbankEnabled } from "@/lib/pagbank";
 import { getSiteSettings } from "@/lib/settings";
 import { getSiteUrl } from "@/lib/urls";
 
@@ -19,5 +20,5 @@ export const maxDuration = 90;
 
 export default async function StartPage() {
   const { whatsapp } = await getSiteSettings();
-  return <QuizLoader whatsapp={whatsapp} placesEnabled={Boolean(process.env.GOOGLE_PLACES_API_KEY)} mapsSearch={apifyEnabled()} art={{ copy: CARD_COPY.review, qr: qrPath(siteUrl), url: displayUrl(siteUrl) }} />;
+  return <QuizLoader whatsapp={whatsapp} placesEnabled={Boolean(process.env.GOOGLE_PLACES_API_KEY)} mapsSearch={apifyEnabled()} payments={pagbankEnabled()} art={{ copy: CARD_COPY.review, qr: qrPath(siteUrl), url: displayUrl(siteUrl) }} />;
 }

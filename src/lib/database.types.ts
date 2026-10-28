@@ -203,6 +203,7 @@ export type Database = {
           business_id: string | null
           card_model: string | null
           cards: number | null
+          checkout_id: string | null
           clients_band: string | null
           contact_name: string | null
           counters: number | null
@@ -212,6 +213,8 @@ export type Database = {
           id: string
           marketing_consent: boolean
           notes: string | null
+          paid_at: string | null
+          payment_status: string | null
           place_address: string | null
           place_category: string | null
           place_city: string | null
@@ -240,6 +243,7 @@ export type Database = {
           business_id?: string | null
           card_model?: string | null
           cards?: number | null
+          checkout_id?: string | null
           clients_band?: string | null
           contact_name?: string | null
           counters?: number | null
@@ -249,6 +253,8 @@ export type Database = {
           id?: string
           marketing_consent?: boolean
           notes?: string | null
+          paid_at?: string | null
+          payment_status?: string | null
           place_address?: string | null
           place_category?: string | null
           place_city?: string | null
@@ -277,6 +283,7 @@ export type Database = {
           business_id?: string | null
           card_model?: string | null
           cards?: number | null
+          checkout_id?: string | null
           clients_band?: string | null
           contact_name?: string | null
           counters?: number | null
@@ -286,6 +293,8 @@ export type Database = {
           id?: string
           marketing_consent?: boolean
           notes?: string | null
+          paid_at?: string | null
+          payment_status?: string | null
           place_address?: string | null
           place_category?: string | null
           place_city?: string | null

@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { countLeadsByStatus, LEAD_STATUSES, listLeads, type LeadStatus } from "@/lib/data";
 import { formatDateTime } from "@/lib/format";
-import { LEAD_STATUS_LABEL, leadKitLabel } from "@/lib/leads";
+import { LEAD_STATUS_LABEL, leadKitLabel, PAYMENT_STATUS_LABEL } from "@/lib/leads";
 import { formatBRL } from "@/lib/pricing";
 import { formatBrPhone } from "@/lib/quiz";
 
@@ -83,6 +83,7 @@ export default async function LeadsPage({ searchParams }: PageProps<"/dashboard/
                     <span>
                       {leadKitLabel(l) || "Sem kit"}
                       {l.total_cents ? ` · ${formatBRL(l.total_cents)}` : ""}
+                      {l.payment_status ? ` · ${PAYMENT_STATUS_LABEL[l.payment_status]}` : ""}
                       {l.status === "quiz" && l.step ? ` · parou em: ${l.step}` : ""}
                     </span>
                     <span className="tabular-nums">{formatDateTime(l.updated_at)}</span>
@@ -118,7 +119,12 @@ export default async function LeadsPage({ searchParams }: PageProps<"/dashboard/
                   </TableCell>
                   <TableCell className="text-sm">
                     {leadKitLabel(l) || "—"}
-                    {l.total_cents ? <div className="text-xs text-muted-foreground">{formatBRL(l.total_cents)}</div> : null}
+                    {l.total_cents ? (
+                      <div className="text-xs text-muted-foreground">
+                        {formatBRL(l.total_cents)}
+                        {l.payment_status && ` · ${PAYMENT_STATUS_LABEL[l.payment_status]}`}
+                      </div>
+                    ) : null}
                   </TableCell>
                   <TableCell>
                     <Badge variant={VARIANT[l.status as LeadStatus] ?? "outline"}>{LEAD_STATUS_LABEL[l.status as LeadStatus] ?? l.status}</Badge>

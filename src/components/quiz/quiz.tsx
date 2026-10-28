@@ -3,8 +3,10 @@
 import {
   ArrowLeftIcon,
   CheckCircle2Icon,
+  ClockIcon,
   CheckIcon,
   CircleAlertIcon,
+  CreditCardIcon,
   Loader2Icon,
   MessageCircleIcon,
   MinusIcon,
@@ -13,7 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useReducer, useState, useTransition } from "react";
-import { saveLead, type LeadPayload } from "@/app/comecar/actions";
+import { getPaymentStatus, saveLead, startPayment, type LeadPayload, type PaymentStatus } from "@/app/comecar/actions";
 import { Logo } from "@/components/brand/logo";
 import { ProductArt, ProductPicker, StylePicker } from "@/components/cards/piece-picker";
 import type { ArtData } from "@/components/cards/print-art";
@@ -56,6 +58,8 @@ interface StepProps {
   placesEnabled: boolean;
   /** Sem a Places API, busca o negócio pelo scraper (Apify). */
   mapsSearch: boolean;
+  /** PagBank configurado: o pedido termina no pagamento. */
+  payments: boolean;
 }
 
 const businessName = (s: QuizState) => s.business?.name ?? "seu negócio";
@@ -423,7 +427,63 @@ function StepContact({ state, dispatch }: StepProps & { error: string | null }) 
 /** Há mais de um modelo à venda desse tipo (senão o seletor some). */
 const pickable = (kind: Product["kind"]) => AVAILABLE_PRODUCTS.filter((p) => p.kind === kind).length > 1;
 
-function StepDone({ state, dispatch, art, whatsapp }: StepProps) {
+const PAYMENT_POLL_MS = 5000;
+
+/** Situação do pagamento do pedido: confere a cada 5 s até o webhook do PagBank confirmar. */
+function usePaymentStatus(sessionId: string, enabled: boolean) {
+  const [status, setStatus] = useState<PaymentStatus | "carregando">(enabled ? "carregando" : null);
+  useEffect(() => {
+    if (!enabled) return;
+    let active = true;
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = async () => {
+      const next = await getPaymentStatus(sessionId).catch(() => "pendente" as const);
+      if (!active) return;
+      setStatus(next);
+      if (next === "pendente") timer = setTimeout(tick, PAYMENT_POLL_MS);
+    };
+    void tick();
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [sessionId, enabled]);
+  return status;
+}
+
+/** Abre a página de pagamento do PagBank (o progresso fica salvo para a volta). */
+function PayButton({ sessionId, label }: { sessionId: string; label: string }) {
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <div className="grid justify-items-center gap-2">
+      <Button
+        size="lg"
+        className="h-12 px-6 text-base"
+        disabled={pending}
+        onClick={() =>
+          startTransition(async () => {
+            setError(null);
+            const result = await startPayment(sessionId);
+            if (result.ok) window.location.assign(result.url);
+            else if (result.reason === "pago") window.location.reload();
+            else setError("Não foi possível abrir o pagamento. Tente de novo.");
+          })
+        }
+      >
+        {pending ? <Loader2Icon className="animate-spin" /> : <CreditCardIcon />} {label}
+      </Button>
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function StepDone({ state, dispatch, art, whatsapp, payments }: StepProps) {
+  const payment = usePaymentStatus(state.sessionId, payments);
   const kit = recommendKit(state);
   const style = getStyle(state.style);
   const plaque = getProduct(state.plaqueModel);
@@ -438,13 +498,60 @@ function StepDone({ state, dispatch, art, whatsapp }: StepProps) {
   const href = whatsapp ? whatsappHref(whatsapp, message) : contactHref(message);
   const firstName = state.contact.name.trim().split(/\s+/)[0];
 
+  const order = `${businessName(state)}: ${describeKit(kit)}, estilo ${style.label.toLowerCase()}`;
+  const awaiting = payment === "pendente" || payment === "carregando";
+
+  if (payments && payment !== "pago") {
+    return (
+      <div className="text-center">
+        {awaiting ? (
+          <ClockIcon className="mx-auto mb-4 size-12 text-muted-foreground" />
+        ) : (
+          <CircleAlertIcon className="mx-auto mb-4 size-12 text-destructive" />
+        )}
+        <Title>
+          {payment === "recusado"
+            ? "O pagamento não foi aprovado"
+            : awaiting
+              ? "Aguardando a confirmação do pagamento"
+              : `Falta só o pagamento, ${firstName}`}
+        </Title>
+        <Lead>
+          Pedido da {order}, {kitPriceLabel(kit)}.
+          {payment === "recusado"
+            ? " Tente de novo com outro cartão ou pague com Pix."
+            : awaiting
+              ? " Assim que o PagBank confirmar, esta página atualiza sozinha. Pagou com Pix? Costuma levar poucos segundos."
+              : " Pague com Pix ou cartão na página segura do PagBank."}
+        </Lead>
+        {awaiting && payment !== "carregando" && (
+          <p className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground" role="status">
+            <Loader2Icon className="size-4 animate-spin" /> Conferindo o pagamento...
+          </p>
+        )}
+        <div className="mt-6">
+          <PayButton sessionId={state.sessionId} label={awaiting ? "Abrir o pagamento de novo" : "Pagar agora"} />
+        </div>
+        {href && (
+          <a href={href} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block text-sm text-muted-foreground underline">
+            Dúvidas? Fale com a gente no WhatsApp
+          </a>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="text-center">
       <CheckCircle2Icon className="mx-auto mb-4 size-12 text-[#34A853]" />
-      <Title>Tudo certo, {firstName}!</Title>
+      <Title>{payments ? `Pagamento confirmado, ${firstName}!` : `Tudo certo, ${firstName}!`}</Title>
       <Lead>
-        Recebemos o pedido da {businessName(state)}: {describeKit(kit)}, estilo {style.label.toLowerCase()}.
-        {href ? " Envie a mensagem abaixo para agilizar o atendimento." : " Vamos te chamar no WhatsApp em breve."}
+        Recebemos o pedido da {order}.
+        {payments
+          ? " Vamos te chamar no WhatsApp para combinar a entrega da placa."
+          : href
+            ? " Envie a mensagem abaixo para agilizar o atendimento."
+            : " Vamos te chamar no WhatsApp em breve."}
       </Lead>
       <div className="mx-auto my-6 flex h-44 items-center justify-center gap-4">
         <ProductArt product={plaque} style={state.style} art={art} />
@@ -492,6 +599,8 @@ const NEXT_LABEL: Partial<Record<StepKey, string>> = {
   contato: "Enviar pedido",
 };
 
+const PAY_LABEL = "Ir para o pagamento";
+
 // Quiz -----------------------------------------------------------------------------
 
 export function Quiz({
@@ -499,11 +608,13 @@ export function Quiz({
   whatsapp,
   placesEnabled,
   mapsSearch,
+  payments,
 }: {
   art: ArtData;
   whatsapp: string | null;
   placesEnabled: boolean;
   mapsSearch: boolean;
+  payments: boolean;
 }) {
   const [state, dispatch] = useReducer(reducer, undefined, () => loadState(window.location.search));
   const [error, setError] = useState<string | null>(null);
@@ -527,6 +638,19 @@ export function Quiz({
         if (!result.ok) {
           setError(result.error ?? "Não foi possível enviar. Tente novamente.");
           return;
+        }
+        if (payments) {
+          const payment = await startPayment(state.sessionId);
+          if (payment.ok) {
+            // Na volta do PagBank, o quiz abre na conclusão, que confere o pagamento.
+            persist(reducer(state, { type: "next" }));
+            window.location.assign(payment.url);
+            return;
+          }
+          if (payment.reason === "erro") {
+            setError("Pedido salvo, mas não foi possível abrir o pagamento. Tente de novo.");
+            return;
+          }
         }
         dispatch({ type: "next" });
       });
@@ -567,7 +691,16 @@ export function Quiz({
       </header>
 
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pt-6 pb-32">
-        <Step state={state} dispatch={dispatch} art={art} whatsapp={whatsapp} placesEnabled={placesEnabled} mapsSearch={mapsSearch} error={error} />
+        <Step
+          state={state}
+          dispatch={dispatch}
+          art={art}
+          whatsapp={whatsapp}
+          placesEnabled={placesEnabled}
+          mapsSearch={mapsSearch}
+          payments={payments}
+          error={error}
+        />
       </main>
 
       {showNav && (
@@ -579,7 +712,7 @@ export function Quiz({
               </p>
             )}
             <Button size="lg" className="h-12 w-full text-base" onClick={next} disabled={!canAdvance(key, state) || pending}>
-              {pending ? "Enviando..." : (NEXT_LABEL[key] ?? "Próximo")}
+              {pending ? "Enviando..." : key === "contato" && payments ? PAY_LABEL : (NEXT_LABEL[key] ?? "Próximo")}
             </Button>
           </div>
         </div>

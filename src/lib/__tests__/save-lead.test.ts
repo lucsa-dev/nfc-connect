@@ -18,6 +18,7 @@ vi.mock("@/lib/supabase/admin", () => ({
 // Módulos só de servidor que o arquivo de actions importa (não usados no saveLead).
 vi.mock("@/lib/apify", () => ({ apifyEnabled: () => false, searchMapsSync: async () => null }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
+vi.mock("@/lib/pagbank", () => ({ pagbankEnabled: () => false, createCheckout: async () => null }));
 
 const { saveLead } = await import("@/app/comecar/actions");
 

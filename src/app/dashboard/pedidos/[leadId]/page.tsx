@@ -11,7 +11,8 @@ import { getProduct, getStyle } from "@/lib/card";
 import { apifyEnabled } from "@/lib/apify";
 import { getLead } from "@/lib/data";
 import { formatDateTime } from "@/lib/format";
-import { LEAD_STATUS_LABEL, leadKitLabel } from "@/lib/leads";
+import { LEAD_STATUS_LABEL, leadKitLabel, PAYMENT_STATUS_LABEL } from "@/lib/leads";
+import { defaultSearchTerm } from "@/lib/market";
 import { reviewUrl } from "@/lib/places";
 import { formatBRL } from "@/lib/pricing";
 import { CLIENT_BANDS, formatBrPhone, SPOTS } from "@/lib/quiz";
@@ -43,6 +44,12 @@ export default async function LeadPage({ params }: PageProps<"/dashboard/pedidos
         description={
           <span className="flex flex-wrap items-center gap-2">
             <Badge variant={status === "lead" ? "default" : "secondary"}>{LEAD_STATUS_LABEL[status] ?? lead.status}</Badge>
+            {lead.payment_status && (
+              <Badge variant={lead.payment_status === "pago" ? "default" : "outline"}>
+                {PAYMENT_STATUS_LABEL[lead.payment_status]}
+                {lead.paid_at && ` em ${formatDateTime(lead.paid_at)}`}
+              </Badge>
+            )}
             <span>Recebido em {formatDateTime(lead.created_at)}</span>
           </span>
         }
@@ -131,7 +138,7 @@ export default async function LeadPage({ params }: PageProps<"/dashboard/pedidos
                 <span className="text-sm font-medium">Relatório de concorrência</span>
                 <ReportForm
                   target={lead.business_id ? { businessId: lead.business_id } : { placeId: lead.place_id, name: lead.place_name }}
-                  defaultTerm={lead.place_category?.toLocaleLowerCase("pt-BR") ?? ""}
+                  defaultTerm={defaultSearchTerm(lead.place_category, lead.place_name)}
                   defaultArea={[lead.place_city, lead.place_state].filter(Boolean).join(" - ")}
                 />
               </div>
