@@ -1,16 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CheckIcon, ExternalLinkIcon, FileTextIcon, Loader2Icon } from "lucide-react";
+import { AtSignIcon, CheckIcon, ExternalLinkIcon, FileTextIcon, Loader2Icon, MailIcon, PhoneIcon, UserIcon } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { ProspectReportButton, RunPoller } from "@/components/market/market-actions";
+import { AddProspectButton } from "@/components/prospects/prospect-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getLatestReportsByPlace, getProspectSearch } from "@/lib/data";
+import { getLatestReportsByPlace, getProspectsByPlace, getProspectSearch } from "@/lib/data";
 import { formatDateTime, formatNumber } from "@/lib/format";
 import { NEARBY_ALL } from "@/lib/apify-maps";
 import { defaultSearchTerm, formatDistance, readProspects, type Prospect } from "@/lib/market";
+import { parseBrazilPhone, statusLabel } from "@/lib/prospects";
 import { checkProspect } from "../../relatorios/actions";
 
 export const metadata: Metadata = { title: "Prospecção" };
@@ -87,6 +89,45 @@ function ReportAction({ p, report, search }: { p: Prospect; report: ExistingRepo
   );
 }
 
+/** Telefone, e-mail e Instagram (buscas antigas só sabem se tem telefone). */
+function ContactLine({ p }: { p: Prospect }) {
+  const c = p.contact;
+  if (!c) return p.phone ? <span className="block text-xs text-muted-foreground">Tem telefone no Google</span> : null;
+  const phone = parseBrazilPhone(c.phone);
+  const items = [
+    c.phone && (
+      <span key="phone" className="inline-flex items-center gap-1 whitespace-nowrap">
+        <PhoneIcon className="size-3" /> {c.phone}
+        {phone && !phone.mobile && <span className="text-muted-foreground">(fixo)</span>}
+      </span>
+    ),
+    c.emails[0] && (
+      <span key="email" className="inline-flex items-center gap-1 break-all">
+        <MailIcon className="size-3 shrink-0" /> {c.emails[0]}
+      </span>
+    ),
+    c.instagram && (
+      <span key="ig" className="inline-flex items-center gap-1">
+        <AtSignIcon className="size-3" /> {c.instagram}
+      </span>
+    ),
+  ].filter(Boolean);
+  if (items.length === 0) return <span className="block text-xs text-muted-foreground">Sem contato no Google</span>;
+  return <span className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">{items}</span>;
+}
+
+type ListedProspect = { id: string; status: string };
+
+/** Põe na lista de prospecção ou abre a ficha, se já está. */
+function ProspectAction({ p, searchId, listed }: { p: Prospect; searchId: string; listed: ListedProspect | undefined }) {
+  if (!listed) return <AddProspectButton searchId={searchId} placeId={p.placeId} />;
+  return (
+    <Button size="sm" variant="secondary" nativeButton={false} render={<Link href={`/dashboard/prospeccao/clientes/${listed.id}`} />}>
+      <UserIcon /> {statusLabel(listed.status)}
+    </Button>
+  );
+}
+
 const SORTS = [
   { id: "oportunidade", label: "Oportunidade" },
   { id: "distancia", label: "Mais perto" },
@@ -99,7 +140,8 @@ export default async function ProspectSearchPage({ params, searchParams }: PageP
   const byDistance = nearby && (await searchParams).ordem === "distancia";
   const prospects = readProspects(search.results).filter((p) => !p.closed);
   if (byDistance) prospects.sort((a, b) => (a.distanceM ?? Infinity) - (b.distanceM ?? Infinity));
-  const reports = await getLatestReportsByPlace(prospects.map((p) => p.placeId));
+  const placeIds = prospects.map((p) => p.placeId);
+  const [reports, listed] = await Promise.all([getLatestReportsByPlace(placeIds), getProspectsByPlace(placeIds)]);
 
   return (
     <>
@@ -158,8 +200,10 @@ export default async function ProspectSearchPage({ params, searchParams }: PageP
                     </span>
                     <ScoreBadge score={p.score} />
                   </div>
+                  <ContactLine p={p} />
                   {p.reasons.length > 0 && <p className="text-xs text-muted-foreground">{p.reasons.join(" · ")}</p>}
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <ProspectAction p={p} searchId={search.id} listed={listed.get(p.placeId)} />
                     <ReportAction p={p} report={reports.get(p.placeId)} search={search} />
                     <MapsLink p={p} />
                   </div>
@@ -191,6 +235,7 @@ export default async function ProspectSearchPage({ params, searchParams }: PageP
                         <ProspectName p={p} report={reports.get(p.placeId)} />
                       </span>
                       {p.category && <span className="block text-xs text-muted-foreground">{p.category}</span>}
+                      <ContactLine p={p} />
                       {p.reasons.length > 0 && <span className="block text-xs text-muted-foreground">{p.reasons.join(" · ")}</span>}
                     </TableCell>
                     <TableCell className="text-right whitespace-nowrap tabular-nums">
@@ -200,9 +245,10 @@ export default async function ProspectSearchPage({ params, searchParams }: PageP
                     <TableCell className="text-right tabular-nums">{formatNumber(p.reviews)}</TableCell>
                     <TableCell className="text-right tabular-nums">{decimal(p.pace)}</TableCell>
                     <TableCell>
-                      <div className="flex items-center justify-end gap-3">
+                      <div className="flex items-center justify-end gap-2">
                         <MapsLink p={p} />
                         <ReportAction p={p} report={reports.get(p.placeId)} search={search} />
+                        <ProspectAction p={p} searchId={search.id} listed={listed.get(p.placeId)} />
                       </div>
                     </TableCell>
                   </TableRow>

@@ -88,7 +88,8 @@ export function ReportForm({
 
 export function ProspectForm() {
   const [term, setTerm] = useState("");
-  const [area, setArea] = useState("");
+  // A prospecção é em Fortaleza: troque pelo bairro para uma busca mais fina.
+  const [area, setArea] = useState("Fortaleza, CE");
   const [pending, run] = useRun();
   return (
     <form

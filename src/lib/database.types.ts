@@ -678,6 +678,77 @@ export type Database = {
         }
         Relationships: []
       }
+      prospects: {
+        Row: {
+          contact_name: string | null
+          contacted_at: string | null
+          created_at: string
+          data: Json
+          email: string | null
+          id: string
+          instagram: string | null
+          name: string
+          notes: string | null
+          owner_id: string
+          phone: string | null
+          place_id: string
+          price_cents: number | null
+          proposal_note: string | null
+          search_id: string | null
+          status: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          contact_name?: string | null
+          contacted_at?: string | null
+          created_at?: string
+          data?: Json
+          email?: string | null
+          id?: string
+          instagram?: string | null
+          name: string
+          notes?: string | null
+          owner_id?: string
+          phone?: string | null
+          place_id: string
+          price_cents?: number | null
+          proposal_note?: string | null
+          search_id?: string | null
+          status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          contact_name?: string | null
+          contacted_at?: string | null
+          created_at?: string
+          data?: Json
+          email?: string | null
+          id?: string
+          instagram?: string | null
+          name?: string
+          notes?: string | null
+          owner_id?: string
+          phone?: string | null
+          place_id?: string
+          price_cents?: number | null
+          proposal_note?: string | null
+          search_id?: string | null
+          status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prospects_search_id_fkey"
+            columns: ["search_id"]
+            isOneToOne: false
+            referencedRelation: "prospect_searches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rank_grids: {
         Row: {
           center_lat: number

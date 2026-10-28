@@ -338,12 +338,23 @@ export function unansweredNegatives(c: Pick<Competitor, "recent">): RecentReview
 
 // Prospecção -------------------------------------------------------------------------------
 
+/** Contatos do negócio (a Places API não informa e-mail; vem do site, pelo scraper). */
+export interface ProspectContact {
+  phone: string | null;
+  website: string | null;
+  emails: string[];
+  /** Usuário do Instagram, sem @. */
+  instagram: string | null;
+}
+
 export interface Prospect extends Competitor {
   closed: boolean;
   score: number;
   reasons: string[];
   /** Distância até o vendedor, na busca "perto de mim". */
   distanceM?: number | null;
+  /** Buscas antigas não têm (só o booleano `phone`). */
+  contact?: ProspectContact;
 }
 
 /** Distância em metros entre dois pontos (haversine). */

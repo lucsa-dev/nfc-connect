@@ -302,3 +302,41 @@ export async function getProspectSearch(searchId: string) {
   if (!data) notFound();
   return data;
 }
+
+// Clientes em prospecção -----------------------------------------------------------
+
+export async function listProspects(status?: string) {
+  const supabase = await createClient();
+  let query = supabase
+    .from("prospects")
+    .select("id, name, status, contact_name, phone, email, contacted_at, updated_at, score:data->score, category:data->category")
+    .order("updated_at", { ascending: false })
+    .limit(200);
+  if (status) query = query.eq("status", status);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data.map((p) => ({ ...p, score: typeof p.score === "number" ? p.score : null, category: typeof p.category === "string" ? p.category : null }));
+}
+
+export async function getProspect(prospectId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("prospects")
+    .select("*, search:prospect_searches(term, area, center_lat)")
+    .eq("id", prospectId)
+    .maybeSingle();
+  if (error && error.code !== "22P02") throw error;
+  if (!data) notFound();
+  return data;
+}
+
+/** Negócios da busca que já estão na lista de prospecção, por Place ID. */
+export async function getProspectsByPlace(placeIds: string[]) {
+  const prospects = new Map<string, { id: string; status: string }>();
+  if (!placeIds.length) return prospects;
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("prospects").select("id, place_id, status").in("place_id", placeIds);
+  if (error) throw error;
+  for (const p of data) prospects.set(p.place_id, { id: p.id, status: p.status });
+  return prospects;
+}

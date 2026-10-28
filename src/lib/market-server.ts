@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/lib/database.types";
-import { marketActorInput, NEARBY_ALL, nearbyActorInput, parseCompetitor, prospectActorInput, splitMarketItems } from "@/lib/apify-maps";
+import { contactOf, marketActorInput, NEARBY_ALL, nearbyActorInput, parseCompetitor, prospectActorInput, splitMarketItems } from "@/lib/apify-maps";
 import { getDatasetItems, getRun, startRun } from "@/lib/apify";
 import { notExpired } from "@/lib/data";
 import { analysisEnabled, requestOpenAI } from "@/lib/google";
@@ -400,7 +400,10 @@ export async function syncProspect(supabase: Client, searchId: string): Promise<
   const now = new Date();
   const seen = new Set<string>();
   const found = (await getDatasetItems(run.datasetId))
-    .map((item) => parseCompetitor(item, now))
+    .map((item) => {
+      const c = parseCompetitor(item, now);
+      return c && { ...c, contact: contactOf(item) };
+    })
     .filter((c): c is NonNullable<typeof c> => c !== null && !seen.has(c.placeId) && Boolean(seen.add(c.placeId)));
   const center = search.center_lat !== null && search.center_lng !== null ? { lat: search.center_lat, lng: search.center_lng } : null;
   const near = found

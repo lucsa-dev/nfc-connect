@@ -1,4 +1,5 @@
-import { competitorFromProfile, estimatePace, type Competitor } from "@/lib/market";
+import { competitorFromProfile, estimatePace, type Competitor, type ProspectContact } from "@/lib/market";
+import { instagramHandle } from "@/lib/prospects";
 import { readLatLng, type LatLng, type PlaceProfile } from "@/lib/places";
 
 /**
@@ -59,6 +60,9 @@ export interface ApifyPlaceItem {
   imagesCount?: number | null;
   website?: string | null;
   phone?: string | null;
+  /** Contatos achados no site do negócio (só com scrapeContacts). */
+  emails?: string[];
+  instagrams?: string[];
   openingHours?: Array<{ day?: string; hours?: string }>;
   permanentlyClosed?: boolean;
   temporarilyClosed?: boolean;
@@ -225,7 +229,8 @@ export function prospectActorInput(term: string, area: string) {
     scrapeReviewsPersonalData: false,
     scrapePlaceDetailPage: false,
     maxImages: 0,
-    scrapeContacts: false,
+    // E-mail e Instagram do site do negócio, para o contato (custo extra por negócio com site).
+    scrapeContacts: true,
   };
 }
 
@@ -267,7 +272,18 @@ export function nearbyActorInput(term: string | null, center: LatLng, radiusM: n
     scrapeReviewsPersonalData: false,
     scrapePlaceDetailPage: false,
     maxImages: 0,
-    scrapeContacts: false,
+    scrapeContacts: true,
+  };
+}
+
+/** Contatos de um item do scraper, para a lista de prospecção. */
+export function contactOf(item: ApifyPlaceItem): ProspectContact {
+  const instagram = item.instagrams?.map(instagramHandle).find(Boolean) ?? null;
+  return {
+    phone: item.phone || null,
+    website: item.website || null,
+    emails: [...new Set((item.emails ?? []).map((e) => e.trim().toLowerCase()).filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)))].slice(0, 3),
+    instagram,
   };
 }
 
