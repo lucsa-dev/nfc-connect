@@ -7,6 +7,7 @@ import { BusinessSearch } from "@/components/quiz/business-search";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { searchTermSuggestions } from "@/lib/market";
 import { normalizeGoogleReviewUrl, type PlaceInfo } from "@/lib/places";
 import { normalizeBrPhone, phoneForInput } from "@/lib/quiz";
 
@@ -16,6 +17,7 @@ export function ActivationForm({ code, placesEnabled }: { code: string; placesEn
   const [link, setLink] = useState("");
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
+  const [term, setTerm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -24,10 +26,12 @@ export function ActivationForm({ code, placesEnabled }: { code: string; placesEn
   const linkValid = normalizeGoogleReviewUrl(link) !== null;
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const phoneValid = normalizeBrPhone(whatsapp) !== null;
+  const suggestions = place?.placeId ? searchTermSuggestions(place.category, place.name) : [];
 
   // Sugere o telefone do Google como WhatsApp, sem apagar o que o dono digitou.
   function choosePlace(next: PlaceInfo | null) {
     if (whatsapp === "" || whatsapp === phoneForInput(place?.phone)) setWhatsapp(phoneForInput(next?.phone));
+    setTerm(searchTermSuggestions(next?.category, next?.name)[0] ?? "");
     setPlace(next);
   }
 
@@ -39,7 +43,7 @@ export function ActivationForm({ code, placesEnabled }: { code: string; placesEn
     setError(null);
     startTransition(async () => {
       // Em caso de sucesso a action redireciona; só volta aqui com erro.
-      const result = await activateCard(code, input, { email: email.trim(), whatsapp });
+      const result = await activateCard(code, input, { email: email.trim(), whatsapp, term });
       if (result && !result.ok) setError(result.message);
     });
   }
@@ -112,6 +116,33 @@ export function ActivationForm({ code, placesEnabled }: { code: string; placesEn
               />
               {whatsapp.length > 0 && !phoneValid && <p className="text-xs text-destructive">Confira o número com DDD.</p>}
             </div>
+            {place.placeId && (
+              <div className="grid gap-1.5">
+                <Label htmlFor="owner-term">O que o cliente digita no Google para achar você?</Label>
+                <Input
+                  id="owner-term"
+                  value={term}
+                  onChange={(e) => setTerm(e.target.value)}
+                  maxLength={80}
+                  autoComplete="off"
+                  placeholder="Ex.: autoescola, padaria, barbearia"
+                  className="h-11 text-base"
+                />
+                {suggestions.length > 1 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {suggestions.map((s) => (
+                      <Button key={s} type="button" size="sm" variant={s === term.trim() ? "secondary" : "outline"} onClick={() => setTerm(s)}>
+                        {s}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  O relatório mensal compara você com os negócios que aparecem nessa busca na sua cidade. Use o nome do ramo, não o do
+                  negócio.
+                </p>
+              </div>
+            )}
           </fieldset>
           <p className="text-sm text-muted-foreground">
             Confira os dados. Depois de ativado, este cartão vai levar os clientes direto para a avaliação do negócio no Google.

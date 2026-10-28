@@ -466,3 +466,72 @@ export function monthlyReportSearch(reports: ReportSummary[], now: Date): { term
   const base = sorted.find((r) => r.status === "ready");
   return base ? { term: base.term, area: base.area } : "sem_base";
 }
+
+// Termo da busca --------------------------------------------------------------------
+
+/**
+ * Ramos que o nome do negócio costuma dizer melhor que a categoria do Google
+ * ("Auto Escola X" aparece como "Instituição educacional"). Em ordem de
+ * prioridade, sobre o nome sem acentos e em minúsculas.
+ */
+const NAME_TERMS: Array<[RegExp, string]> = [
+  [/\bauto ?escola\b|\bcfc\b|formacao de condutores/, "autoescola"],
+  [/\bpadaria\b|\bpanificadora\b/, "padaria"],
+  [/\bconfeitaria\b/, "confeitaria"],
+  [/\bpizzaria\b/, "pizzaria"],
+  [/\bhamburgueria\b|\bburger\b/, "hamburgueria"],
+  [/\bchurrascaria\b/, "churrascaria"],
+  [/\bsorveteria\b/, "sorveteria"],
+  [/\bacai\b/, "açaí"],
+  [/\bcafeteria\b/, "cafeteria"],
+  [/\blanchonete\b/, "lanchonete"],
+  [/\bbarbearia\b|\bbarber\b/, "barbearia"],
+  [/\besmalteria\b|\bmanicure\b/, "esmalteria"],
+  [/\bestetica\b/, "clínica de estética"],
+  [/\bsalao\b|\bcabeleireir/, "salão de beleza"],
+  [/\bodonto|\bdentista\b/, "dentista"],
+  [/\bveterinari|\bpet ?shop\b/, "pet shop"],
+  [/\bfarmacia\b|\bdrogaria\b/, "farmácia"],
+  [/\botica\b/, "ótica"],
+  [/\bacademia\b|\bfitness\b|\bcrossfit\b/, "academia"],
+  [/\blava ?(jato|rapido)\b/, "lava jato"],
+  [/\boficina\b|\bmecanica\b|\bauto ?center\b/, "oficina mecânica"],
+  [/\bsupermercado\b|\bmercadinho\b/, "supermercado"],
+  [/\bfloricultura\b/, "floricultura"],
+  [/\bpapelaria\b/, "papelaria"],
+  [/\bimobiliaria\b/, "imobiliária"],
+  [/\bpousada\b/, "pousada"],
+  [/\bhotel\b/, "hotel"],
+  [/\brestaurante\b/, "restaurante"],
+];
+
+/** Categorias do Google amplas demais para a busca: trazem negócios de outro ramo. */
+const GENERIC_CATEGORIES = new Set([
+  "instituicao educacional",
+  "escola",
+  "estabelecimento",
+  "ponto de interesse",
+  "empresa",
+  "loja",
+  "servico",
+  "prestador de servicos",
+  "comercio",
+]);
+
+/**
+ * Termos para a busca do relatório ("o que o cliente digita no Google"), do
+ * mais para o menos indicado: a categoria do Google e o ramo dito no nome
+ * (o nome vem antes se a categoria for genérica).
+ */
+export function searchTermSuggestions(category: string | null | undefined, name: string | null | undefined): string[] {
+  const folded = fold(name ?? "");
+  const fromName = NAME_TERMS.find(([pattern]) => pattern.test(folded))?.[1];
+  const cat = category?.trim().toLocaleLowerCase("pt-BR") || undefined;
+  const terms = cat && !GENERIC_CATEGORIES.has(fold(cat)) ? [cat, fromName] : [fromName, cat];
+  return [...new Set(terms.filter((t): t is string => Boolean(t)))];
+}
+
+/** Termo padrão da busca do relatório (vazio se não houver nenhum). */
+export function defaultSearchTerm(category: string | null | undefined, name: string | null | undefined): string {
+  return searchTermSuggestions(category, name)[0] ?? "";
+}

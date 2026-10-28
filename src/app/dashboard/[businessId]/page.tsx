@@ -30,6 +30,7 @@ import { analysisEnabled, metricsEnabled, placesEnabled } from "@/lib/google";
 import { formatDateTime, formatNumber } from "@/lib/format";
 import { readPlaceProfile } from "@/lib/places";
 import { LINK_TYPE_INFO } from "@/lib/link-types";
+import { defaultSearchTerm } from "@/lib/market";
 import { buildPublicLinkUrl, getSiteUrl } from "@/lib/urls";
 import { approveMember, createLink, deleteBusiness, removeMember, resendMemberLink, setCardLink, updateBusiness } from "../actions";
 
@@ -88,7 +89,7 @@ export default async function BusinessPage({ params }: PageProps<"/dashboard/[bu
       {business.place_id && (
         <MarketPanel
           businessId={business.id}
-          defaultTerm={profile?.category?.toLocaleLowerCase("pt-BR") ?? ""}
+          defaultTerm={defaultSearchTerm(profile?.category, business.name)}
           defaultArea={[profile?.city, profile?.state].filter(Boolean).join(" - ")}
           reports={reports}
           planExpiresAt={business.plan_expires_at}

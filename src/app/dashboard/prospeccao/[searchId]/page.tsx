@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { getLatestReportsByPlace, getProspectSearch } from "@/lib/data";
 import { formatDateTime, formatNumber } from "@/lib/format";
 import { NEARBY_ALL } from "@/lib/apify-maps";
-import { formatDistance, readProspects, type Prospect } from "@/lib/market";
+import { defaultSearchTerm, formatDistance, readProspects, type Prospect } from "@/lib/market";
 import { checkProspect } from "../../relatorios/actions";
 
 export const metadata: Metadata = { title: "Prospecção" };
@@ -42,7 +42,7 @@ function MapsLink({ p }: { p: Prospect }) {
  */
 function reportSearch(p: Prospect, search: { term: string; area: string; center_lat: number | null }) {
   if (search.center_lat === null) return { term: search.term, area: search.area };
-  const term = search.term === NEARBY_ALL ? (p.category?.toLocaleLowerCase("pt-BR") ?? "comércio") : search.term;
+  const term = search.term === NEARBY_ALL ? (defaultSearchTerm(p.category, p.name) || "comércio") : search.term;
   const area = p.area ?? p.address?.split(" - ").slice(-2, -1)[0]?.trim() ?? "";
   return { term, area };
 }

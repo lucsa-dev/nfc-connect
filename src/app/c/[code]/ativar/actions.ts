@@ -7,6 +7,7 @@ import { apifyEnabled } from "@/lib/apify";
 import { normalizeCode } from "@/lib/cards";
 import { analyzeSnapshot, collectProfiles, fetchPlaceProfile, metricsEnabled, saveSnapshot, storeProfiles } from "@/lib/google";
 import { businessSlugCandidates, mapsQueryOf } from "@/lib/leads";
+import { defaultSearchTerm } from "@/lib/market";
 import { startReport } from "@/lib/market-server";
 import { addMember, sendAccessLink } from "@/lib/members";
 import { normalizeGoogleReviewUrl, PLACE_ID_PATTERN, reviewUrl, type PlaceProfile } from "@/lib/places";
@@ -24,6 +25,8 @@ export type ActivationInput =
 export interface ActivationOwner {
   email: string;
   whatsapp: string;
+  /** O que o cliente digita no Google para achar o negócio (busca do relatório). */
+  term?: string;
 }
 
 const ownerSchema = z.object({
@@ -215,9 +218,11 @@ export async function activateCard(rawCode: string, input: ActivationInput, rawO
   }
 
   // Sem relatório anterior o mensal não tem busca para repetir: o primeiro sai
-  // agora, com a categoria e a cidade do perfil ("padaria" em "Fortaleza - CE").
-  // O cron dos relatórios finaliza a coleta na rodada seguinte.
-  const term = profile?.category?.toLocaleLowerCase("pt-BR") ?? "";
+  // agora, com o termo que o dono confirmou (ou o sugerido pela categoria e pelo
+  // nome) e a cidade do perfil ("padaria" em "Fortaleza - CE"). Os mensais
+  // repetem esse termo. O cron dos relatórios finaliza a coleta na rodada seguinte.
+  const chosenTerm = rawOwner.term?.trim().replace(/\s+/g, " ") ?? "";
+  const term = chosenTerm.length >= 2 ? chosenTerm : defaultSearchTerm(profile?.category, profile?.name);
   const area = [profile?.city, profile?.state].filter(Boolean).join(" - ");
   if (profile && apifyEnabled() && term.length >= 2 && area.length >= 2) {
     const reportBusinessId = businessId;

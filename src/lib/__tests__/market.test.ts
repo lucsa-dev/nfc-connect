@@ -30,6 +30,8 @@ import {
   type Competitor,
   type MarketData,
   monthlyReportSearch,
+  searchTermSuggestions,
+  defaultSearchTerm,
 } from "@/lib/market";
 import { marketAnalysisInput, readMarketAnalysis } from "@/lib/market-analysis";
 import { gridPoints, parseTextSearchIds, rankIn, summarizeGrid, textSearchBody, type GridPoint } from "@/lib/rank-grid";
@@ -352,5 +354,26 @@ describe("monthlyReportSearch", () => {
   it("sem relatório pronto não tem busca para repetir", () => {
     expect(monthlyReportSearch([], now)).toBe("sem_base");
     expect(monthlyReportSearch([report(40, "failed")], now)).toBe("sem_base");
+  });
+});
+
+describe("searchTermSuggestions", () => {
+  it("usa o ramo do nome quando a categoria do Google é genérica", () => {
+    expect(searchTermSuggestions("Instituição educacional", "Auto Escola Centrovale - Horizonte")).toEqual([
+      "autoescola",
+      "instituição educacional",
+    ]);
+    expect(defaultSearchTerm("Estabelecimento", "CFC Trânsito Seguro")).toBe("autoescola");
+  });
+
+  it("mantém a categoria específica na frente do nome", () => {
+    expect(searchTermSuggestions("Espaço para eventos", "Salão de Festas Bela Vista")).toEqual(["espaço para eventos", "salão de beleza"]);
+    expect(searchTermSuggestions("Padaria", "Padaria Pão Quente")).toEqual(["padaria"]);
+  });
+
+  it("sem categoria nem ramo no nome não sugere nada", () => {
+    expect(searchTermSuggestions(null, "Centrovale")).toEqual([]);
+    expect(defaultSearchTerm(null, null)).toBe("");
+    expect(defaultSearchTerm("Instituição educacional", "Centrovale")).toBe("instituição educacional");
   });
 });
