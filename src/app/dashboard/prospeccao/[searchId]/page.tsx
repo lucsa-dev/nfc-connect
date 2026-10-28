@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AtSignIcon, CheckIcon, ExternalLinkIcon, FileTextIcon, Loader2Icon, MailIcon, PhoneIcon, UserIcon } from "lucide-react";
+import { AtSignIcon, CheckIcon, DownloadIcon, ExternalLinkIcon, FileTextIcon, Loader2Icon, MailIcon, PhoneIcon, UserIcon } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { ProspectReportButton, RunPoller } from "@/components/market/market-actions";
 import { AddProspectButton } from "@/components/prospects/prospect-actions";
@@ -149,6 +149,14 @@ export default async function ProspectSearchPage({ params, searchParams }: PageP
         breadcrumbs={[{ href: "/dashboard/prospeccao", label: "Prospecção" }]}
         title={nearby ? `${search.term[0]!.toUpperCase()}${search.term.slice(1)} ${search.area}` : `${search.term} em ${search.area}`}
         description={`Busca de ${formatDateTime(search.created_at)}. ${byDistance ? "Do mais perto para o mais longe." : "Ordenado pela nota de oportunidade."}`}
+        actions={
+          search.status === "ready" &&
+          prospects.length > 0 && (
+            <Button variant="outline" nativeButton={false} render={<a href={`/dashboard/prospeccao/${search.id}/planilha`} download />}>
+              <DownloadIcon /> Planilha (CSV)
+            </Button>
+          )
+        }
       />
 
       {search.status === "running" && (

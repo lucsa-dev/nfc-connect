@@ -1,6 +1,6 @@
 import { formatBRL } from "@/lib/pricing";
 import { normalizeBrPhone } from "@/lib/quiz";
-import type { Prospect } from "@/lib/market";
+import { formatDistance, type Prospect } from "@/lib/market";
 
 /**
  * Clientes em prospecção: contato um a um pelo WhatsApp com a proposta em PDF.
@@ -119,3 +119,61 @@ export function parsePriceCents(value: string): number | null | "invalid" {
 }
 
 export const formatPrice = (cents: number | null) => (cents === null ? "" : formatBRL(cents));
+
+/** Colunas da planilha da busca, na ordem do arquivo. */
+export const SHEET_COLUMNS = [
+  "Oportunidade",
+  "Negócio",
+  "Categoria",
+  "Endereço",
+  "Posição / distância",
+  "Nota",
+  "Avaliações",
+  "Telefone",
+  "Tipo de telefone",
+  "E-mail",
+  "Instagram",
+  "Site",
+  "Motivos",
+  "Status",
+  "Proposta (PDF)",
+  "WhatsApp",
+  "Google Maps",
+] as const;
+
+export type SheetRow = Record<(typeof SHEET_COLUMNS)[number], string | number | null>;
+
+/**
+ * Uma linha por negócio da busca, com os links da proposta em PDF e do WhatsApp
+ * com a mensagem pronta. `origin` monta links absolutos (abrem com login no painel).
+ */
+export function prospectSheetRows(
+  prospects: Prospect[],
+  opts: { origin: string; searchId: string; nearby: boolean; listed: Map<string, { status: string }> },
+): SheetRow[] {
+  return prospects.map((p) => {
+    const phone = p.contact?.phone ?? null;
+    const parsed = parseBrazilPhone(phone);
+    const position = opts.nearby ? (p.distanceM != null ? formatDistance(p.distanceM) : null) : p.rank ? `${p.rank}º` : null;
+    const listed = opts.listed.get(p.placeId);
+    return {
+      Oportunidade: p.score,
+      Negócio: p.name,
+      Categoria: p.category ?? null,
+      Endereço: p.address ?? null,
+      "Posição / distância": position,
+      Nota: p.rating != null ? decimal(p.rating) : null,
+      Avaliações: p.reviews,
+      Telefone: phone,
+      "Tipo de telefone": phone ? (parsed ? (parsed.mobile ? "celular" : "fixo") : "inválido") : null,
+      "E-mail": p.contact?.emails.join(", ") || null,
+      Instagram: p.contact?.instagram ? `https://instagram.com/${p.contact.instagram}` : null,
+      Site: p.contact?.website ?? null,
+      Motivos: p.reasons.join("; ") || null,
+      Status: listed ? statusLabel(listed.status) : null,
+      "Proposta (PDF)": `${opts.origin}/dashboard/prospeccao/${opts.searchId}/proposta/${encodeURIComponent(p.placeId)}`,
+      WhatsApp: prospectWhatsappHref(phone, proposalMessage({ name: p.name, contactName: null, data: p })),
+      "Google Maps": p.mapsUrl ?? null,
+    };
+  });
+}

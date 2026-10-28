@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { contactOf, prospectActorInput } from "@/lib/apify-maps";
-import { opportunityScore } from "@/lib/market";
+import { opportunityScore, type Prospect } from "@/lib/market";
 import { nearbyTextBody, nearbyTypesBody, parseSearchPage, prospectFromProfile, regionSearchBody, SEARCH_FIELD_MASK } from "@/lib/places-prospect";
 import {
   contactsFromHtml,
@@ -10,6 +10,7 @@ import {
   profileSummary,
   proposalFileName,
   proposalMessage,
+  prospectSheetRows,
   prospectWhatsappHref,
 } from "@/lib/prospects";
 
@@ -147,5 +148,48 @@ describe("prospecção pela Places API", () => {
     expect(recent.reasons).not.toContain("Poucas avaliações recentes");
     expect(recent.reasons).not.toContain("Quase não recebe avaliações novas");
     expect(old.score - recent.score).toBe(10);
+  });
+});
+
+describe("planilha da busca", () => {
+  const base = {
+    placeId: "ChIJ_abc",
+    name: "Padaria Central",
+    rank: 2,
+    rating: 4.8,
+    reviews: 41,
+    category: "Padaria",
+    address: "Rua X, 10",
+    mapsUrl: "https://maps.google.com/?cid=1",
+    score: 72,
+    reasons: ["Poucas avaliações", "Sem site"],
+    closed: false,
+    contact: { phone: "(85) 99999-8888", website: null, emails: ["a@b.com.br"], instagram: "padaria.central" },
+  } as unknown as Prospect;
+  const opts = { origin: "https://toptap.com.br", searchId: "s1", nearby: false, listed: new Map() };
+
+  it("monta a linha com os links da proposta e do WhatsApp", () => {
+    const [row] = prospectSheetRows([base], opts);
+    expect(row).toMatchObject({
+      Oportunidade: 72,
+      "Posição / distância": "2º",
+      Nota: "4,8",
+      "Tipo de telefone": "celular",
+      "E-mail": "a@b.com.br",
+      Instagram: "https://instagram.com/padaria.central",
+      Motivos: "Poucas avaliações; Sem site",
+      Status: null,
+      "Proposta (PDF)": "https://toptap.com.br/dashboard/prospeccao/s1/proposta/ChIJ_abc",
+    });
+    expect(row!.WhatsApp).toMatch(/^https:\/\/wa\.me\/5585999998888\?text=Ol%C3%A1!/);
+  });
+
+  it("mostra distância, status da lista e deixa o WhatsApp vazio sem telefone", () => {
+    const p = { ...base, distanceM: 850, contact: { ...base.contact!, phone: null } } as Prospect;
+    const [row] = prospectSheetRows([p], { ...opts, nearby: true, listed: new Map([["ChIJ_abc", { status: "enviado" }]]) });
+    expect(row!["Posição / distância"]).toMatch(/850/);
+    expect(row!.Status).toBe("Proposta enviada");
+    expect(row!.WhatsApp).toBeNull();
+    expect(row!["Tipo de telefone"]).toBeNull();
   });
 });
