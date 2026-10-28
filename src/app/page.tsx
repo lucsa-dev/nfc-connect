@@ -8,15 +8,15 @@ import { PhoneMock } from "@/components/landing/phone-mock";
 import { WhatsAppFab } from "@/components/landing/whatsapp-fab";
 import { ThemeSwitcher } from "@/components/theme/theme-switcher";
 import { CARD_COPY, displayUrl, qrPath } from "@/lib/card";
-import { formatBRL, PRICING } from "@/lib/pricing";
+import { PRICING } from "@/lib/pricing";
 import { getSiteSettings } from "@/lib/settings";
 import { siteConfig, whatsappHref } from "@/lib/site-config";
 import { getSiteUrl } from "@/lib/urls";
 
 export const metadata: Metadata = {
-  title: { absolute: "TopTap · Monitoramento da sua reputação no Google Maps por 12 meses" },
+  title: { absolute: "TopTap · Monitoramento da sua reputação no Google Maps" },
   description:
-    "Mais avaliações e mais destaque no Google Maps: placa com NFC para o cliente avaliar em um toque e um relatório por mês, durante 12 meses, com sua posição, seus concorrentes e o que fazer para subir. Pagamento único, sem mensalidade.",
+    "Mais avaliações e mais destaque no Google Maps: placa com NFC para o cliente avaliar em um toque e um relatório por mês com sua posição, seus concorrentes e o que fazer para subir.",
 };
 
 const siteUrl = getSiteUrl();
@@ -52,14 +52,6 @@ const MAPS_RESULTS = [
 
 const BEFORE = ["Abrir o Google", "Buscar o seu negócio", "Achar o perfil certo", "Rolar até as avaliações", "Tocar em “Avaliar”"];
 
-/** Linha do tempo do plano: o que acontece em cada mês. */
-const MILESTONES: Record<number, { title: string; color: keyof typeof TEXT; dot: string }> = {
-  0: { title: "Diagnóstico", color: "blue", dot: "bg-[#4285F4]" },
-  1: { title: "Placa no balcão", color: "yellow", dot: "bg-[#FBBC05]" },
-  6: { title: "Meio do caminho", color: "red", dot: "bg-[#EA4335]" },
-  12: { title: "Balanço do ano", color: "green", dot: "bg-[#34A853]" },
-};
-
 const REPORT_ITEMS = [
   ["Posição na busca", "Em que lugar você aparece na busca que o seu cliente faz."],
   ["Mapa de ranking", "Sua posição vista de vários pontos do bairro, não só da porta da loja."],
@@ -78,10 +70,10 @@ const RECEIPT: Array<[string, string]> = [
   ["Diagnóstico do perfil", "grátis"],
   ["Placa de balcão NFC + QR Code", "1"],
   ["Adesivos QR para mesas e recepção", `até ${PRICING.includedStickers}`],
-  ["Relatórios mensais", "12"],
+  ["Relatório mensal", "todo mês"],
   ["Mapa de ranking", "todo mês"],
   ["Leitura das avaliações por IA", "todo mês"],
-  ["Painel de toques e avaliações", "12 meses"],
+  ["Painel de toques e avaliações", "incluso"],
   ["Troca do destino da placa", "à vontade"],
 ];
 
@@ -89,16 +81,8 @@ const SEGMENTS = ["Restaurantes", "Cafés e padarias", "Salões e barbearias", "
 
 const FAQ = [
   {
-    q: "Tem mensalidade?",
-    a: "Não. É um pagamento único que cobre 12 meses de monitoramento, com um relatório por mês. Sem fidelidade e sem cobrança recorrente.",
-  },
-  {
     q: "E se eu precisar de QR Code nas mesas?",
-    a: `A placa fica no balcão e o serviço inclui até ${PRICING.includedStickers} adesivos com QR Code para mesas, recepção ou atendentes. Precisa de mais? Cada adesivo extra custa ${formatBRL(PRICING.extraSticker)}.`,
-  },
-  {
-    q: "O que acontece depois dos 12 meses?",
-    a: "A placa continua levando seus clientes para a avaliação. Os relatórios mensais param, e você pode renovar o acompanhamento se quiser.",
+    a: `A placa fica no balcão e o serviço inclui até ${PRICING.includedStickers} adesivos com QR Code para mesas, recepção ou atendentes. Precisa de mais? É só pedir.`,
   },
   {
     q: "Vocês garantem o 1º lugar no Google Maps?",
@@ -180,7 +164,7 @@ function ReportMock() {
     <figure className="rounded-[1.75rem] bg-card p-6 shadow-2xl ring-1 ring-foreground/10 sm:p-8">
       <div className="flex items-baseline justify-between gap-3">
         <p className="font-heading text-lg font-semibold">Padaria Exemplo</p>
-        <p className="text-xs text-muted-foreground">relatório 12 de 12</p>
+        <p className="text-xs text-muted-foreground">relatório mensal</p>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">Posição na busca “padaria” em Aldeota, Fortaleza</p>
 
@@ -189,11 +173,11 @@ function ReportMock() {
           2<span className="text-4xl">º</span>
         </p>
         <p className={`flex items-center gap-1 text-sm font-medium ${TEXT.green}`}>
-          <ArrowUpIcon className="size-4" /> subiu 7 posições em 12 meses
+          <ArrowUpIcon className="size-4" /> subiu 7 posições
         </p>
       </div>
 
-      <svg viewBox="0 0 220 80" className="mt-6 h-24 w-full overflow-visible" role="img" aria-label="Posição subindo do 9º para o 2º lugar em 12 meses">
+      <svg viewBox="0 0 220 80" className="mt-6 h-24 w-full overflow-visible" role="img" aria-label="Posição subindo do 9º para o 2º lugar">
         <polyline
           fill="none"
           stroke="#4285F4"
@@ -214,7 +198,7 @@ function ReportMock() {
       </svg>
       <div className="mt-2 flex justify-between text-[11px] text-muted-foreground" aria-hidden>
         <span>mês 1 · 9º</span>
-        <span>mês 12 · 2º</span>
+        <span>hoje · 2º</span>
       </div>
 
       <dl className="mt-8 grid grid-cols-3 divide-x border-t pt-5 text-center">
@@ -236,13 +220,13 @@ function ReportMock() {
   );
 }
 
-/** Plano em forma de recibo: o que um pagamento cobre. */
+/** Plano em forma de recibo: o que vem incluído. */
 function Receipt() {
   return (
     <div className="relative mx-auto w-full max-w-md -rotate-1 bg-card font-mono text-sm shadow-2xl ring-1 ring-foreground/10">
       <div className="flex items-center justify-between px-7 pt-7">
         <Logo className="h-6" />
-        <span className="text-xs text-muted-foreground">plano anual</span>
+        <span className="text-xs text-muted-foreground">o que vem no plano</span>
       </div>
       <ul className="grid gap-2.5 px-7 pt-6 pb-7">
         {RECEIPT.map(([item, value]) => (
@@ -252,23 +236,6 @@ function Receipt() {
             <span className="tabular-nums">{value}</span>
           </li>
         ))}
-      </ul>
-      {/* Picote: os recortes têm a cor do fundo da seção do plano. */}
-      <div className="relative border-t-2 border-dashed border-foreground/15">
-        <span className="absolute -top-3 -left-3 size-6 rounded-full bg-[#1A73E8] dark:bg-[#0B3B8C]" aria-hidden />
-        <span className="absolute -top-3 -right-3 size-6 rounded-full bg-[#1A73E8] dark:bg-[#0B3B8C]" aria-hidden />
-      </div>
-      <ul className="grid gap-2.5 px-7 pt-6 pb-7">
-        <li className="flex items-end">
-          <span>Mensalidade</span>
-          <span className="mx-2 mb-1 flex-1 border-b border-dotted border-foreground/30" aria-hidden />
-          <span className={TEXT.green}>R$ 0</span>
-        </li>
-        <li className="flex items-end text-base font-semibold">
-          <span>Pagamento único</span>
-          <span className="mx-2 mb-1 flex-1 border-b border-dotted border-foreground/30" aria-hidden />
-          <span>{formatBRL(PRICING.service)}</span>
-        </li>
       </ul>
       <div className="flex h-2" aria-hidden>
         <span className="flex-1 bg-[#4285F4]" />
@@ -324,12 +291,12 @@ export default async function LandingPage() {
                 Seu cliente procura no Google. <span className={TEXT.blue}>Você aparece em que lugar?</span>
               </h1>
               <p className="mt-6 max-w-lg text-lg text-pretty text-muted-foreground">
-                Por 12 meses, a TopTap coloca uma placa no seu balcão para o cliente avaliar em um toque e te entrega, todo mês, um
-                relatório com sua posição no Maps, seus concorrentes e o próximo passo.
+                A TopTap coloca uma placa no seu balcão para o cliente avaliar em um toque e te entrega, todo mês, um relatório com
+                sua posição no Maps, seus concorrentes e o próximo passo.
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
                 <CtaButton>Fazer diagnóstico grátis</CtaButton>
-                <span className="text-sm text-muted-foreground">Pagamento único. Sem mensalidade.</span>
+                <span className="text-sm text-muted-foreground">Leva um minuto. Sem compromisso.</span>
               </div>
             </div>
 
@@ -397,30 +364,11 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        {/* O ano: linha do tempo dos 12 meses. */}
+        {/* Como funciona */}
         <section id="ano" className="scroll-mt-16 border-y bg-brand-surface py-24 md:py-32">
           <div className="mx-auto w-full max-w-6xl px-4">
-            <Heading kicker="Como funciona">Um ano inteiro de olho no seu Google.</Heading>
+            <Heading kicker="Como funciona">Todo mês de olho no seu Google.</Heading>
 
-            <div className="tt-reveal mt-16 -mx-4 overflow-x-auto px-4 pb-2">
-              <ol className="grid min-w-[44rem] grid-cols-13" aria-label="Linha do tempo do plano">
-                {Array.from({ length: 13 }, (_, m) => {
-                  const milestone = MILESTONES[m];
-                  return (
-                    <li key={m} className="relative flex flex-col items-center">
-                      <span className="absolute top-[0.6875rem] h-px w-full bg-foreground/15" aria-hidden />
-                      <span
-                        className={`relative rounded-full ring-4 ring-brand-surface ${milestone ? `size-6 ${milestone.dot}` : "mt-1.5 size-3 bg-foreground/25"}`}
-                      />
-                      <span className="mt-3 text-xs text-muted-foreground tabular-nums">{m === 0 ? "hoje" : `mês ${m}`}</span>
-                      {milestone && (
-                        <span className={`mt-1 text-center text-xs font-semibold text-balance ${TEXT[milestone.color]}`}>{milestone.title}</span>
-                      )}
-                    </li>
-                  );
-                })}
-              </ol>
-            </div>
 
             <div className="mt-14 grid gap-10 md:grid-cols-3">
               {[
@@ -477,17 +425,16 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        {/* Plano: pagamento único, 12 meses */}
+        {/* Plano: o que vem incluído */}
         <section id="plano" className="scroll-mt-16 bg-[#1A73E8] py-24 text-white md:py-32 dark:bg-[#0B3B8C]">
           <div className="mx-auto grid w-full max-w-6xl items-center gap-16 px-4 md:grid-cols-[1fr_1fr]">
             <div className="tt-reveal">
               <p className="mb-4 text-sm font-medium text-white/75">O plano</p>
               <h2 className="text-4xl leading-[1.05] font-semibold tracking-tight text-balance sm:text-6xl">
-                Paga uma vez. Acompanha o ano todo.
+                Tudo para subir no Google Maps.
               </h2>
               <p className="mt-6 max-w-md text-lg text-pretty text-white/85">
-                Nada de mensalidade nem fidelidade. {formatBRL(PRICING.service)} cobrem a placa, os adesivos QR e 12 meses de
-                relatórios. Antes de decidir, você vê o diagnóstico de graça.
+                A placa, os adesivos QR e um relatório novo todo mês. Antes de decidir, você vê o diagnóstico de graça.
               </p>
               <div className="mt-8">
                 <CtaButton variant="secondary">Começar pelo diagnóstico</CtaButton>
