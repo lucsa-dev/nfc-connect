@@ -1,5 +1,6 @@
 import { apifyEnabled, startMapsRun } from "@/lib/apify";
-import { collectProfiles, storeProfiles, targetOf } from "@/lib/google";
+import { fetchPlaceProfile, storeProfiles, targetOf } from "@/lib/google";
+import type { PlaceProfile } from "@/lib/places";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSiteUrl } from "@/lib/urls";
 
@@ -7,8 +8,9 @@ import { getSiteUrl } from "@/lib/urls";
  * Coleta semanal de nota e avaliações de todos os negócios vinculados ao Google.
  * Agendado em vercel.json; a Vercel envia "Authorization: Bearer $CRON_SECRET".
  *
- * Com a Apify: inicia uma execução só do scraper com todos os negócios e
- * termina; o resultado chega em /api/apify/webhook. Com a Places API: coleta aqui.
+ * Places API (mais barata) para quem tem Place ID: coleta aqui. Quem ainda não
+ * tem Place ID vai para uma execução do scraper da Apify, se configurado; o
+ * resultado chega em /api/apify/webhook.
  */
 
 export const dynamic = "force-dynamic";
@@ -39,19 +41,23 @@ export async function GET(request: Request) {
   const done = new Set((recent ?? []).map((r) => r.business_id));
   const targets = businesses.filter((b) => !done.has(b.id)).map(targetOf);
 
-  if (apifyEnabled()) {
-    if (targets.length === 0) return Response.json({ ok: true, total: businesses.length, queued: 0 });
-    const webhookUrl = `${getSiteUrl()}/api/apify/webhook?secret=${encodeURIComponent(secret)}`;
-    const runId = await startMapsRun(targets, webhookUrl);
-    const result = { ok: true, total: businesses.length, skipped: done.size, queued: targets.length, runId };
-    console.log("Coleta do Google iniciada na Apify", result);
-    return Response.json(result);
-  }
+  const places = Boolean(process.env.GOOGLE_PLACES_API_KEY);
+  const withPlace = places ? targets.filter((t) => t.placeId) : [];
+  const forScraper = places ? targets.filter((t) => !t.placeId) : targets;
 
-  // Places API: só quem tem Place ID.
-  const withPlace = targets.filter((t) => t.placeId);
-  const saved = await storeProfiles(supabase, withPlace, await collectProfiles(withPlace));
-  const result = { ok: true, total: businesses.length, skipped: done.size, saved, failed: withPlace.length - saved };
+  let runId: string | null = null;
+  if (apifyEnabled() && forScraper.length) {
+    const webhookUrl = `${getSiteUrl()}/api/apify/webhook?secret=${encodeURIComponent(secret)}`;
+    runId = await startMapsRun(forScraper, webhookUrl);
+  }
+  // collectProfiles cairia no scraper para quem a Places não devolveu; aqui não, para não rodar o scraper duas vezes.
+  const profiles = new Map<string, PlaceProfile>();
+  for (const t of withPlace) {
+    const profile = await fetchPlaceProfile(t.placeId!);
+    if (profile) profiles.set(t.businessId, profile);
+  }
+  const saved = await storeProfiles(supabase, withPlace, profiles);
+  const result = { ok: true, total: businesses.length, skipped: done.size, saved, failed: withPlace.length - saved, queued: runId ? forScraper.length : 0, runId };
   console.log("Coleta do Google", result);
   return Response.json(result);
 }

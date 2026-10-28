@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { contactOf, prospectActorInput } from "@/lib/apify-maps";
+import { opportunityScore } from "@/lib/market";
+import { nearbyTextBody, nearbyTypesBody, parseSearchPage, prospectFromProfile, regionSearchBody, SEARCH_FIELD_MASK } from "@/lib/places-prospect";
 import {
+  contactsFromHtml,
   instagramHandle,
   parseBrazilPhone,
   parsePriceCents,
@@ -85,5 +88,64 @@ describe("contatos do scraper", () => {
         instagrams: ["https://instagram.com/p/xyz", "https://www.instagram.com/padaria.central/"],
       }),
     ).toEqual({ phone: "(85) 3333-4444", website: "https://padaria.com.br", emails: ["contato@padaria.com.br"], instagram: "padaria.central" });
+  });
+});
+
+describe("contactsFromHtml", () => {
+  it("acha e-mails e o Instagram no site", () => {
+    const html = `<a href="mailto:Contato@Padaria.com.br">fale</a> vendas&#64;padaria.com.br <img src="logo@2x.png">
+      <a href="https://www.instagram.com/padaria.central/">IG</a>`;
+    expect(contactsFromHtml(html)).toEqual({ emails: ["contato@padaria.com.br", "vendas@padaria.com.br"], instagram: "padaria.central" });
+  });
+
+  it("ignora e-mails de exemplo", () => {
+    expect(contactsFromHtml("seu@example.com").emails).toEqual([]);
+  });
+});
+
+describe("prospecção pela Places API", () => {
+  const center = { lat: -3.73, lng: -38.5 };
+  const place = {
+    id: "ChIJ_abcdefghij",
+    displayName: { text: "Padaria Central" },
+    formattedAddress: "Rua X, 10 - Aldeota, Fortaleza - CE",
+    rating: 4.8,
+    userRatingCount: 41,
+    businessStatus: "OPERATIONAL",
+    nationalPhoneNumber: "(85) 99999-8888",
+    websiteUri: "https://www.instagram.com/padaria.central/",
+    location: { latitude: -3.731, longitude: -38.501 },
+    reviews: [{ publishTime: "2026-01-10T00:00:00Z", rating: 5 }],
+  };
+
+  it("monta as buscas por região e perto de mim", () => {
+    expect(regionSearchBody("padaria", "Fortaleza, CE", "tok")).toMatchObject({ textQuery: "padaria em Fortaleza, CE", pageSize: 20, pageToken: "tok" });
+    expect(regionSearchBody("padaria", "Fortaleza")).not.toHaveProperty("pageToken");
+    const box = nearbyTextBody("padaria", center, 1000).locationRestriction.rectangle;
+    expect(box.low.latitude).toBeLessThan(center.lat);
+    expect(box.high.longitude).toBeGreaterThan(center.lng);
+    expect(nearbyTypesBody(["bakery"], center, 500).locationRestriction.circle.radius).toBe(500);
+    expect(SEARCH_FIELD_MASK).toContain("places.nationalPhoneNumber");
+    expect(SEARCH_FIELD_MASK).toContain("nextPageToken");
+  });
+
+  it("lê a página e converte em candidato, com o Instagram cadastrado como site", () => {
+    const page = parseSearchPage({ places: [place, { displayName: { text: "Sem id" } }], nextPageToken: "next" });
+    expect(page.profiles).toHaveLength(1);
+    expect(page.nextPageToken).toBe("next");
+    const p = prospectFromProfile(page.profiles[0]!, 3, new Date("2026-10-28"));
+    expect(p).toMatchObject({ rank: 3, closed: false, paceUnknown: true, reviews: 41 });
+    expect(p.contact).toEqual({ phone: "(85) 99999-8888", website: null, emails: [], instagram: "padaria.central" });
+  });
+
+  it("sem ritmo, pontua pela avaliação mais nova", () => {
+    const base = { rating: 4.8, reviews: 41, pace: 0, replies: null, website: true, hours: ["seg"], photos: 10, description: true, paceUnknown: true };
+    const now = new Date("2026-10-28");
+    const old = opportunityScore({ ...base, lastReviewAt: "2026-01-10T00:00:00Z" }, 41, now);
+    const recent = opportunityScore({ ...base, lastReviewAt: "2026-10-20T00:00:00Z" }, 41, now);
+    expect(old.reasons).toContain("Poucas avaliações recentes");
+    expect(recent.reasons).not.toContain("Poucas avaliações recentes");
+    expect(recent.reasons).not.toContain("Quase não recebe avaliações novas");
+    expect(old.score - recent.score).toBe(10);
   });
 });

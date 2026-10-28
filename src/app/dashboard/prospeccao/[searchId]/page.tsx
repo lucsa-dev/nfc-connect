@@ -192,7 +192,7 @@ export default async function ProspectSearchPage({ params, searchParams }: PageP
                           p.category,
                           p.rating !== null ? `${decimal(p.rating)} ★` : "sem nota",
                           `${formatNumber(p.reviews)} avaliações`,
-                          `${decimal(p.pace)}/mês`,
+                          !p.paceUnknown && `${decimal(p.pace)}/mês`,
                         ]
                           .filter(Boolean)
                           .join(" · ")}
@@ -243,7 +243,7 @@ export default async function ProspectSearchPage({ params, searchParams }: PageP
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{p.rating !== null ? decimal(p.rating) : "—"}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatNumber(p.reviews)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{decimal(p.pace)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{p.paceUnknown ? "—" : decimal(p.pace)}</TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-2">
                         <MapsLink p={p} />

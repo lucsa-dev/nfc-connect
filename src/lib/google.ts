@@ -23,7 +23,8 @@ import {
 
 /**
  * Dados do Google Maps e análise da IA (as chaves nunca vão para o navegador).
- * Fonte das métricas: scraper da Apify (APIFY_TOKEN), ou a Google Places API.
+ * Fonte das métricas: a Google Places API (mais barata), e o scraper da Apify
+ * (APIFY_TOKEN) para quem ainda não tem Place ID ou quando a Places falha.
  * A Places API, quando configurada, também habilita a busca do negócio na ativação.
  */
 
@@ -35,15 +36,17 @@ export const metricsEnabled = () => apifyEnabled() || placesEnabled();
 
 /**
  * Busca o perfil de alguns negócios agora (espera o resultado).
- * Com a Apify, sem Place ID busca por "nome, cidade"; com a Places API, só quem tem Place ID.
+ * Places API para quem tem Place ID; o scraper da Apify (que acha por "nome,
+ * cidade") fica para os demais e para quem a Places não devolveu.
  */
 export async function collectProfiles(targets: MapsTarget[]): Promise<Map<string, PlaceProfile>> {
-  if (apifyEnabled()) return scrapeMapsSync(targets);
   const result = new Map<string, PlaceProfile>();
   for (const t of targets) {
     const profile = t.placeId ? await fetchPlaceProfile(t.placeId) : null;
     if (profile) result.set(t.businessId, profile);
   }
+  const rest = targets.filter((t) => !result.has(t.businessId));
+  if (rest.length && apifyEnabled()) for (const [id, profile] of await scrapeMapsSync(rest)) result.set(id, profile);
   return result;
 }
 

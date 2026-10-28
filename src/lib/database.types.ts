@@ -637,6 +637,7 @@ export type Database = {
           center_lng: number | null
           created_at: string
           error: string | null
+          expires_at: string | null
           finished_at: string | null
           id: string
           owner_id: string
@@ -652,6 +653,7 @@ export type Database = {
           center_lng?: number | null
           created_at?: string
           error?: string | null
+          expires_at?: string | null
           finished_at?: string | null
           id?: string
           owner_id?: string
@@ -667,6 +669,7 @@ export type Database = {
           center_lng?: number | null
           created_at?: string
           error?: string | null
+          expires_at?: string | null
           finished_at?: string | null
           id?: string
           owner_id?: string

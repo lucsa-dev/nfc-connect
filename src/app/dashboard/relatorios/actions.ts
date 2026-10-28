@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { ActionState } from "@/lib/action-state";
 import { apifyEnabled } from "@/lib/apify";
+import { placesEnabled } from "@/lib/google";
 import { runRankGrid, startProspect, startReport, syncProspect, syncReport } from "@/lib/market-server";
 import { PLACE_ID_PATTERN } from "@/lib/places";
 import { createClient } from "@/lib/supabase/server";
@@ -88,7 +89,7 @@ export async function deleteReport(reportId: string): Promise<ActionState> {
 // Prospecção -------------------------------------------------------------------------
 
 export async function createProspectSearch(input: { term: string; area: string }): Promise<ActionState> {
-  if (!apifyEnabled()) return { message: "Configure a variável APIFY_TOKEN para buscar negócios." };
+  if (!placesEnabled() && !apifyEnabled()) return { message: "Configure a variável GOOGLE_PLACES_API_KEY para buscar negócios." };
   const parsed = searchSchema.safeParse(input);
   if (!parsed.success) return { message: parsed.error.issues[0]?.message };
   const supabase = await requireUser();
@@ -111,7 +112,7 @@ const nearbySchema = z.object({
 
 /** Prospecção ao redor da localização atual do vendedor (pega pelo navegador). */
 export async function createNearbyProspectSearch(input: { lat: number; lng: number; radiusM: number; term: string }): Promise<ActionState> {
-  if (!apifyEnabled()) return { message: "Configure a variável APIFY_TOKEN para buscar negócios." };
+  if (!placesEnabled() && !apifyEnabled()) return { message: "Configure a variável GOOGLE_PLACES_API_KEY para buscar negócios." };
   const parsed = nearbySchema.safeParse(input);
   if (!parsed.success) return { message: "Localização inválida. Tente de novo." };
   const { lat, lng, radiusM, term } = parsed.data;

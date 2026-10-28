@@ -101,7 +101,7 @@ function Stats({ data, search }: Pick<ProposalInput, "data" | "search">) {
   const items: Array<[string, string]> = [];
   if (data.rating != null) items.push([decimal(data.rating), "nota no Google"]);
   if (data.reviews !== undefined) items.push([data.reviews.toLocaleString("pt-BR"), "avaliações no total"]);
-  if (data.pace !== undefined) items.push([decimal(data.pace), "avaliações novas por mês"]);
+  if (data.pace !== undefined && !data.paceUnknown) items.push([decimal(data.pace), "avaliações novas por mês"]);
   if (search && data.rank !== undefined) items.push([data.rank ? `${data.rank}º` : "fora", `na busca “${search.term}”`]);
   if (items.length === 0) return null;
   return (

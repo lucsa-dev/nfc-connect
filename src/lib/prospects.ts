@@ -55,6 +55,18 @@ export function prospectWhatsappHref(phone: string | null | undefined, message: 
   return parsed ? `https://wa.me/${parsed.e164}?text=${encodeURIComponent(message)}` : null;
 }
 
+const EMAIL = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi;
+/** Imagens e domínios de exemplo que o padrão de e-mail pega por engano. */
+const NOT_EMAIL = /\.(png|jpe?g|gif|webp|svg)$|@(example|exemplo|sentry|wixpress|domain)\./i;
+
+/** E-mails e Instagram de uma página do site do negócio (o Google não informa e-mail). */
+export function contactsFromHtml(html: string): { emails: string[]; instagram: string | null } {
+  const text = html.replace(/&#64;|&commat;/gi, "@");
+  const emails = [...new Set((text.match(EMAIL) ?? []).map((e) => e.toLowerCase()).filter((e) => !NOT_EMAIL.test(e)))].slice(0, 3);
+  const instagram = [...text.matchAll(/instagram\.com\/[^"'\s<>]+/gi)].map((m) => instagramHandle(m[0])).find(Boolean) ?? null;
+  return { emails, instagram };
+}
+
 /** Os dados do negócio salvos com o cliente (o Prospect da busca). */
 export function readProspectData(value: unknown): Partial<Prospect> {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Partial<Prospect>) : {};

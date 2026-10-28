@@ -33,7 +33,7 @@ export default async function ProspectPage({ params }: PageProps<"/dashboard/pro
   const stats = [
     data.rating != null && ["Nota", decimal(data.rating)],
     data.reviews !== undefined && ["Avaliações", formatNumber(data.reviews)],
-    data.pace !== undefined && ["Novas por mês", decimal(data.pace)],
+    data.pace !== undefined && !data.paceUnknown && ["Novas por mês", decimal(data.pace)],
     data.score !== undefined && ["Oportunidade", String(data.score)],
   ].filter((s): s is [string, string] => Boolean(s));
 

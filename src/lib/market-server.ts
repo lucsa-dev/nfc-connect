@@ -1,7 +1,16 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/lib/database.types";
-import { contactOf, marketActorInput, NEARBY_ALL, nearbyActorInput, parseCompetitor, prospectActorInput, splitMarketItems } from "@/lib/apify-maps";
+import {
+  contactOf,
+  marketActorInput,
+  NEARBY_ALL,
+  nearbyActorInput,
+  parseCompetitor,
+  PROSPECT_PLACES,
+  prospectActorInput,
+  splitMarketItems,
+} from "@/lib/apify-maps";
 import { getDatasetItems, getRun, startRun } from "@/lib/apify";
 import { notExpired } from "@/lib/data";
 import { analysisEnabled, requestOpenAI } from "@/lib/google";
@@ -18,7 +27,18 @@ import {
   type MarketData,
 } from "@/lib/market";
 import { marketAnalysisRequestBody, readMarketAnalysis, type MarketAnalysis } from "@/lib/market-analysis";
-import { PLACE_ID_PATTERN, PLACES_BASE, readPlaceProfile, type LatLng } from "@/lib/places";
+import { PLACE_ID_PATTERN, PLACES_BASE, PLACES_CACHE_DAYS, readPlaceProfile, type LatLng, type PlaceProfile } from "@/lib/places";
+import {
+  NEARBY_FIELD_MASK,
+  NEARBY_TYPE_GROUPS,
+  nearbyTextBody,
+  nearbyTypesBody,
+  PAGE_SIZE,
+  parseSearchPage,
+  prospectFromProfile,
+  regionSearchBody,
+  SEARCH_FIELD_MASK,
+} from "@/lib/places-prospect";
 import {
   GRID_FIELD_MASK,
   GRID_SIZE,
@@ -351,7 +371,12 @@ export type ProspectInput =
   /** Perto de mim: term null busca os tipos de NEARBY_TERMS. */
   | { term: string | null; center: LatLng; radiusM: number };
 
+/**
+ * Inicia a prospecção. Com a Places API (mais barata), a busca termina na hora
+ * e a linha já nasce pronta; sem ela, roda o scraper em segundo plano.
+ */
 export async function startProspect(supabase: Client, input: ProspectInput): Promise<string> {
+  if (placesKey()) return createPlacesProspect(supabase, input);
   const nearby = "center" in input;
   const runId = await startRun(nearby ? nearbyActorInput(input.term, input.center, input.radiusM) : prospectActorInput(input.term, input.area));
   const { data, error } = await supabase
@@ -376,6 +401,71 @@ export async function startProspect(supabase: Client, input: ProspectInput): Pro
 
 /** O scraper pode trazer lugares um pouco fora do círculo; aceita até 50% a mais. */
 const NEARBY_SLACK = 1.5;
+
+/** Text Search página a página (o token da próxima vem na resposta). */
+async function textSearchPages(body: (pageToken?: string) => object, limit: number): Promise<PlaceProfile[]> {
+  const profiles: PlaceProfile[] = [];
+  let token: string | undefined;
+  do {
+    const page = parseSearchPage(await placesFetch("/places:searchText", { method: "POST", fieldMask: SEARCH_FIELD_MASK, body: body(token) }));
+    profiles.push(...page.profiles);
+    token = page.nextPageToken ?? undefined;
+  } while (token && profiles.length < limit);
+  return profiles.slice(0, limit);
+}
+
+async function createPlacesProspect(supabase: Client, input: ProspectInput): Promise<string> {
+  const now = new Date();
+  const nearby = "center" in input;
+  let profiles: Array<{ profile: PlaceProfile; rank: number | null }>;
+  if (!nearby) {
+    profiles = (await textSearchPages((t) => regionSearchBody(input.term, input.area, t), PROSPECT_PLACES)).map((profile, i) => ({ profile, rank: i + 1 }));
+  } else if (input.term) {
+    const term = input.term;
+    profiles = (await textSearchPages((t) => nearbyTextBody(term, input.center, input.radiusM, t), PROSPECT_PLACES)).map((profile) => ({ profile, rank: null }));
+  } else {
+    const groups = await Promise.all(
+      NEARBY_TYPE_GROUPS.map((types) =>
+        placesFetch("/places:searchNearby", { method: "POST", fieldMask: NEARBY_FIELD_MASK, body: nearbyTypesBody(types, input.center, input.radiusM) }),
+      ),
+    );
+    profiles = groups.flatMap((json) => parseSearchPage(json).profiles.slice(0, PAGE_SIZE)).map((profile) => ({ profile, rank: null }));
+  }
+
+  const center = nearby ? input.center : null;
+  const seen = new Set<string>();
+  const found = profiles
+    .filter(({ profile }) => !seen.has(profile.placeId) && Boolean(seen.add(profile.placeId)))
+    .map(({ profile, rank }) => {
+      const p = prospectFromProfile(profile, rank, now);
+      return { ...p, distanceM: center && p.location ? distanceMeters(center, p.location) : null };
+    })
+    .filter((p) => !nearby || p.distanceM === null || p.distanceM <= input.radiusM * NEARBY_SLACK);
+  const prospects = rankProspects(found, now).map((p) => ({ ...p, recent: p.recent.map((r) => ({ ...r, text: null })) }));
+
+  const { data, error } = await supabase
+    .from("prospect_searches")
+    .insert({
+      ...(nearby
+        ? {
+            term: input.term ?? NEARBY_ALL,
+            area: `até ${formatDistance(input.radiusM)} de você`,
+            center_lat: input.center.lat,
+            center_lng: input.center.lng,
+            radius_m: input.radiusM,
+          }
+        : { term: input.term, area: input.area }),
+      status: "ready",
+      results: prospects as unknown as Json,
+      finished_at: now.toISOString(),
+      // Conteúdo da Places API: no máximo 30 dias guardado.
+      expires_at: new Date(now.getTime() + PLACES_CACHE_DAYS * DAY).toISOString(),
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return data.id;
+}
 
 export async function syncProspect(supabase: Client, searchId: string): Promise<Status> {
   const { data: search, error } = await supabase.from("prospect_searches").select("*").eq("id", searchId).maybeSingle();
@@ -422,7 +512,9 @@ export async function purgeExpired(supabase: Client) {
   const now = new Date().toISOString();
   const grids = await supabase.from("rank_grids").delete({ count: "exact" }).lt("expires_at", now);
   const snapshots = await supabase.from("place_snapshots").delete({ count: "exact" }).lt("expires_at", now);
+  const searches = await supabase.from("prospect_searches").delete({ count: "exact" }).lt("expires_at", now);
   if (grids.error) throw grids.error;
   if (snapshots.error) throw snapshots.error;
-  return { rankGrids: grids.count ?? 0, placeSnapshots: snapshots.count ?? 0 };
+  if (searches.error) throw searches.error;
+  return { rankGrids: grids.count ?? 0, placeSnapshots: snapshots.count ?? 0, prospectSearches: searches.count ?? 0 };
 }

@@ -6,6 +6,7 @@ import { NearbyProspectForm, ProspectForm } from "@/components/market/market-act
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apifyEnabled } from "@/lib/apify";
+import { placesEnabled } from "@/lib/google";
 import { listProspects, listProspectSearches, listReports } from "@/lib/data";
 import { formatDateTime } from "@/lib/format";
 import { readMarketData } from "@/lib/market";
@@ -85,6 +86,9 @@ export default async function ProspectingPage({ searchParams }: PageProps<"/dash
   const requested = (await searchParams).status;
   const status = PROSPECT_STATUSES.some((s) => s.id === requested) ? (requested as string) : undefined;
   const [prospects, searches, reports] = await Promise.all([listProspects(status), listProspectSearches(), listReports({})]);
+  const searchEnabled = placesEnabled() || apifyEnabled();
+  // Pela Places API a busca termina em segundos; o scraper leva minutos.
+  const duration = placesEnabled() ? "Leva alguns segundos." : "Leva de 1 a 4 minutos.";
 
   return (
     <>
@@ -101,11 +105,11 @@ export default async function ProspectingPage({ searchParams }: PageProps<"/dash
             <CardTitle>Perto de mim</CardTitle>
             <p className="text-sm text-muted-foreground">
               Usa a localização do seu celular para achar, ao seu redor, os negócios que mais precisam de avaliações e de um perfil
-              melhor no Google. Leva de 1 a 4 minutos.
+              melhor no Google. {duration}
             </p>
           </CardHeader>
           <CardContent>
-            {apifyEnabled() ? <NearbyProspectForm /> : <p className="text-sm text-muted-foreground">Configure a variável APIFY_TOKEN para buscar negócios.</p>}
+            {searchEnabled ? <NearbyProspectForm /> : <p className="text-sm text-muted-foreground">Configure a variável GOOGLE_PLACES_API_KEY para buscar negócios.</p>}
           </CardContent>
         </Card>
 
@@ -114,11 +118,11 @@ export default async function ProspectingPage({ searchParams }: PageProps<"/dash
             <CardTitle>Por região</CardTitle>
             <p className="text-sm text-muted-foreground">
               Coleta até 40 negócios de “tipo em bairro ou cidade” e ordena pela nota de oportunidade: nota boa com poucas
-              avaliações, ritmo baixo, dono que não responde e perfil incompleto. Leva de 1 a 4 minutos.
+              avaliações, poucas avaliações recentes e perfil incompleto. {duration}
             </p>
           </CardHeader>
           <CardContent>
-            {apifyEnabled() ? <ProspectForm /> : <p className="text-sm text-muted-foreground">Configure a variável APIFY_TOKEN para buscar negócios.</p>}
+            {searchEnabled ? <ProspectForm /> : <p className="text-sm text-muted-foreground">Configure a variável GOOGLE_PLACES_API_KEY para buscar negócios.</p>}
           </CardContent>
         </Card>
       </div>

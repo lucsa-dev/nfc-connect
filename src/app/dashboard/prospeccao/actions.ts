@@ -8,7 +8,7 @@ import type { Json } from "@/lib/database.types";
 import { fetchPlaceProfile } from "@/lib/google";
 import { readProspects, type Prospect } from "@/lib/market";
 import { PRICING } from "@/lib/pricing";
-import { instagramHandle, parseBrazilPhone, parsePriceCents, PROSPECT_STATUSES, type ProspectStatus } from "@/lib/prospects";
+import { contactsFromHtml, instagramHandle, parseBrazilPhone, parsePriceCents, PROSPECT_STATUSES, type ProspectStatus } from "@/lib/prospects";
 import { createClient } from "@/lib/supabase/server";
 
 async function requireUser() {
@@ -19,6 +19,19 @@ async function requireUser() {
 }
 
 const clientPath = (id: string) => `/dashboard/prospeccao/clientes/${id}`;
+
+/** Lê e-mail e Instagram da página inicial do site do negócio (até 1 MB, 6 s). */
+async function fetchSiteContacts(website: string): Promise<{ emails: string[]; instagram: string | null } | null> {
+  try {
+    const url = new URL(website);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 (TopTap)" }, cache: "no-store", signal: AbortSignal.timeout(6000) });
+    if (!res.ok || !res.headers.get("content-type")?.includes("text/html")) return null;
+    return contactsFromHtml((await res.text()).slice(0, 1_000_000));
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Coloca um negócio da busca na lista de prospecção e abre a ficha dele.
@@ -37,6 +50,11 @@ export async function addProspect(searchId: string, placeId: string): Promise<Ac
   if (!contact?.phone) {
     const profile = await fetchPlaceProfile(placeId);
     if (profile) contact = { emails: [], instagram: null, ...contact, phone: profile.phone, website: contact?.website ?? profile.website };
+  }
+  // A Places API não informa e-mail: procura no site do negócio.
+  if (contact?.website && contact.emails.length === 0) {
+    const site = await fetchSiteContacts(contact.website);
+    if (site) contact = { ...contact, emails: site.emails, instagram: contact.instagram ?? site.instagram };
   }
 
   // Sem as avaliações recentes: a proposta usa só os números do perfil.

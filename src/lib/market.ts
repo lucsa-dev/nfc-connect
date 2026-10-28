@@ -355,6 +355,8 @@ export interface Prospect extends Competitor {
   distanceM?: number | null;
   /** Buscas antigas não têm (só o booleano `phone`). */
   contact?: ProspectContact;
+  /** Busca pela Places API: sem as avaliações mais recentes, `pace` não vale. */
+  paceUnknown?: boolean;
 }
 
 /** Distância em metros entre dois pontos (haversine). */
@@ -378,8 +380,9 @@ export function formatDistance(m: number): string {
  */
 export function opportunityScore(
   p: Pick<Competitor, "rating" | "reviews" | "pace" | "replies" | "website" | "hours" | "photos"> &
-    Partial<Pick<Competitor, "description">> & { closed?: boolean },
+    Partial<Pick<Competitor, "description" | "lastReviewAt">> & { closed?: boolean; paceUnknown?: boolean },
   areaMedianReviews: number | null,
+  now = new Date(),
 ): { score: number; reasons: string[] } {
   if (p.closed) return { score: 0, reasons: ["Fechado"] };
   const reasons: string[] = [];
@@ -407,7 +410,14 @@ export function opportunityScore(
     }
   }
 
-  if (p.pace < 2) {
+  if (p.paceUnknown) {
+    // Só as 5 avaliações "mais relevantes": a mais nova delas é um sinal fraco, vale menos pontos.
+    const last = p.lastReviewAt ? Date.parse(p.lastReviewAt) : NaN;
+    if (p.reviews > 0 && (!Number.isFinite(last) || now.getTime() - last > 60 * DAY)) {
+      score += 10;
+      reasons.push("Poucas avaliações recentes");
+    }
+  } else if (p.pace < 2) {
     score += 15;
     reasons.push("Quase não recebe avaliações novas");
   } else if (p.pace < 5) score += 8;
@@ -434,10 +444,13 @@ export function opportunityScore(
 }
 
 /** Pontua e ordena os negócios encontrados na prospecção. */
-export function rankProspects(items: Array<Competitor & { closed: boolean; distanceM?: number | null }>): Prospect[] {
+export function rankProspects(
+  items: Array<Competitor & { closed: boolean; distanceM?: number | null; paceUnknown?: boolean; contact?: ProspectContact }>,
+  now = new Date(),
+): Prospect[] {
   const med = median(items.filter((i) => !i.closed).map((i) => i.reviews));
   return items
-    .map((i) => ({ ...i, ...opportunityScore(i, med) }))
+    .map((i) => ({ ...i, ...opportunityScore(i, med, now) }))
     .sort((a, b) => b.score - a.score || a.reviews - b.reviews);
 }
 
